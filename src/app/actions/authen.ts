@@ -1,11 +1,21 @@
 "use server";
 import { auth } from "@/app/lib/auth";
+import { redirect } from "next/navigation";
+
+import { headers } from "next/headers";
 
 export const signIn = async () => {
-  // server-side usage
-  await auth.api.signInSocial({
+  const { url } = await auth.api.signInSocial({
     body: {
-      provider: "google", // or any other provider id
+      provider: "google",
     },
   });
+  if (url) redirect(url);
+};
+
+export const signOut = async () => {
+  await auth.api.signOut({
+    headers: await headers(),
+  });
+  redirect("/");
 };

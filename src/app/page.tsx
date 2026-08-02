@@ -1,5 +1,7 @@
 import { getComments } from "@/app/actions/comments";
-import { signIn } from "@/app/actions/authen";
+import { signIn, signOut } from "@/app/actions/authen";
+import { auth } from "@/app/lib/auth";
+import { headers } from "next/headers";
 
 function GoogleMark() {
   return (
@@ -25,51 +27,69 @@ function GoogleMark() {
 }
 
 export default async function Home() {
-  const comments = await getComments();
+  // const comments = await getComments();
 
-  console.log("Comments from the database: ", comments);
-  return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f8fc] px-6 py-12 text-slate-950">
-      <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-indigo-200/40 blur-3xl" />
-      <div className="absolute -bottom-40 -right-24 h-[28rem] w-[28rem] rounded-full bg-violet-200/40 blur-3xl" />
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-      <section className="relative w-full max-w-md rounded-3xl border border-white/80 bg-white/90 p-8 shadow-[0_24px_80px_-30px_rgba(49,46,129,0.45)] backdrop-blur sm:p-10">
-        <div className="mb-10 text-center">
-          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-xl font-bold text-white shadow-lg shadow-indigo-600/25">
-            G
+  console.log("Session from the database: ", session);
+  if (!session) {
+    return (
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f8fc] px-6 py-12 text-slate-950">
+        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-indigo-200/40 blur-3xl" />
+        <div className="absolute -bottom-40 -right-24 h-[28rem] w-[28rem] rounded-full bg-violet-200/40 blur-3xl" />
+
+        <section className="relative w-full max-w-md rounded-3xl border border-white/80 bg-white/90 p-8 shadow-[0_24px_80px_-30px_rgba(49,46,129,0.45)] backdrop-blur sm:p-10">
+          <div className="mb-10 text-center">
+            <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-xl font-bold text-white shadow-lg shadow-indigo-600/25">
+              G
+            </div>
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">
+              Welcome back
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight">
+              Sign in to Groupss
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-slate-500">
+              Connect with your team and keep every conversation in one place.
+            </p>
           </div>
-          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">
-            Welcome back
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Sign in to Groupss
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-slate-500">
-            Connect with your team and keep every conversation in one place.
-          </p>
-        </div>
 
-        {/* <a
+          {/* <a
           href="/auth/google"
           className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-indigo-100 disabled:cursor-wait disabled:opacity-60"
         >
           <GoogleMark />
           Continue with Google
         </a> */}
-        <form action={signIn}>
-          <button
-            type="submit"
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-indigo-100 disabled:cursor-wait disabled:opacity-60"
-          >
-            <GoogleMark />
-            Continue with Google
-          </button>
-        </form>
+          <form action={signIn}>
+            <button
+              type="submit"
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-indigo-100 disabled:cursor-wait disabled:opacity-60"
+            >
+              <GoogleMark />
+              Continue with Google
+            </button>
+          </form>
 
-        <p className="mt-8 text-center text-xs leading-5 text-slate-400">
-          By continuing, you agree to the Groupss terms and privacy policy.
-        </p>
-      </section>
-    </main>
+          <p className="mt-8 text-center text-xs leading-5 text-slate-400">
+            By continuing, you agree to the Groupss terms and privacy policy.
+          </p>
+        </section>
+      </main>
+    );
+  }
+  return (
+    <div>
+      <h1>Welcome {session.user.name}</h1>
+      <form action={signOut}>
+        <button type="submit" className="mt-4 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600">
+          Sign out
+        </button>
+      </form>
+    </div>
   );
+
+  // console.log("Comments from the database: ", comments);
 }
