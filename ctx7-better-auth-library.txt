@@ -1,0 +1,1 @@
+error: too many arguments for 'library'. Expected 2 arguments but got 10: ", Better, Auth\ \Next.js, app, router, Google, OAuth, PostgreSQL, database, setup\.
