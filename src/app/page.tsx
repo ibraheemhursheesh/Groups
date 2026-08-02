@@ -2,6 +2,9 @@ import { getComments } from "@/app/actions/comments";
 import { signIn, signOut } from "@/app/actions/authen";
 import { auth } from "@/app/lib/auth";
 import { headers } from "next/headers";
+import { CreateGroupDialog } from "@/components/create-group-dialog";
+import { listAllGroups } from "@/app/actions/groups";
+import Link from "next/link";
 
 function GoogleMark() {
   return (
@@ -27,13 +30,10 @@ function GoogleMark() {
 }
 
 export default async function Home() {
-  // const comments = await getComments();
-
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  console.log("Session from the database: ", session);
   if (!session) {
     return (
       <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f8fc] px-6 py-12 text-slate-950">
@@ -55,14 +55,6 @@ export default async function Home() {
               Connect with your team and keep every conversation in one place.
             </p>
           </div>
-
-          {/* <a
-          href="/auth/google"
-          className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-indigo-100 disabled:cursor-wait disabled:opacity-60"
-        >
-          <GoogleMark />
-          Continue with Google
-        </a> */}
           <form action={signIn}>
             <button
               type="submit"
@@ -80,16 +72,59 @@ export default async function Home() {
       </main>
     );
   }
+
+  return <Dashboard session={session} />;
+}
+
+async function Dashboard({ session }: { session: any }) {
+  const orgResult = await listAllGroups();
+
+  console.log(orgResult);
+  const organizations = orgResult ?? [];
+
   return (
-    <div>
-      <h1>Welcome {session.user.name}</h1>
-      <form action={signOut}>
-        <button type="submit" className="mt-4 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600">
-          Sign out
-        </button>
-      </form>
+    <div className="mx-auto max-w-3xl px-4 py-12">
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">
+          Welcome, {session.user.name}
+        </h1>
+        <div className="flex items-center gap-3">
+          <CreateGroupDialog />
+          <form action={signOut}>
+            <button className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600">
+              Sign out
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <h2 className="mb-4 text-lg font-semibold">Groups</h2>
+
+      {organizations.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No groups yet. Create one to get started.
+        </p>
+      ) : (
+        <ul className="grid gap-3">
+          {organizations.map((org: any) => (
+            <li key={org.id}>
+              <Link
+                href={`/groups/${org.id}`}
+                className="block rounded-xl border p-4 transition hover:border-indigo-200 hover:bg-indigo-50/50"
+              >
+                <p className="font-medium">{org.name}</p>
+                {org.metadata &&
+                  typeof org.metadata === "object" &&
+                  org.metadata.description && (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {org.metadata.description}
+                    </p>
+                  )}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
-
-  // console.log("Comments from the database: ", comments);
 }

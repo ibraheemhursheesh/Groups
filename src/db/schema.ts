@@ -1,6 +1,78 @@
 import { integer, pgTable, varchar } from "drizzle-orm/pg-core";
 import * as t from "drizzle-orm/pg-core";
 
+export const posts = pgTable("posts", {
+  id: t.text("id").primaryKey(),
+  groupId: t.text("group_id").notNull(),
+  userId: t
+    .text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  content: t.text("content").notNull(),
+  status: t.text("status").notNull(),
+  createdAt: t
+    .timestamp("created_at", { precision: 6, withTimezone: true })
+    .notNull(),
+});
+
+export const joinRequests = pgTable("join_requests", {
+  id: t.text("id").primaryKey(),
+  groupId: t.text("group_id").notNull(),
+  userId: t
+    .text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  status: t.text("status").notNull(),
+  createdAt: t
+    .timestamp("created_at", { precision: 6, withTimezone: true })
+    .notNull(),
+});
+
+export const organization = pgTable("organization", {
+  id: t.text("id").primaryKey(),
+  name: t.text("name").notNull(),
+  slug: t.text("slug").notNull().unique(),
+  logo: t.text("logo"),
+  metadata: t.text("metadata"),
+  createdAt: t
+    .timestamp("created_at", { precision: 6, withTimezone: true })
+    .notNull(),
+});
+
+export const member = pgTable("member", {
+  id: t.text("id").primaryKey(),
+  organizationId: t
+    .text("organization_id")
+    .notNull()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  userId: t
+    .text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  role: t.text("role").notNull(),
+  createdAt: t
+    .timestamp("created_at", { precision: 6, withTimezone: true })
+    .notNull(),
+});
+
+export const invitation = pgTable("invitation", {
+  id: t.text("id").primaryKey(),
+  organizationId: t
+    .text("organization_id")
+    .notNull()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  email: t.text("email").notNull(),
+  role: t.text("role").notNull(),
+  status: t.text("status").notNull(),
+  expiresAt: t
+    .timestamp("expires_at", { precision: 6, withTimezone: true })
+    .notNull(),
+  inviterId: t
+    .text("inviter_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+});
+
 export const commentsTable = pgTable("comments", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: varchar({ length: 255 }).notNull(),

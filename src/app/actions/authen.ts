@@ -10,6 +10,7 @@ export const signIn = async () => {
       provider: "google",
     },
   });
+  console.log("url", url);
   if (url) redirect(url);
 };
 
