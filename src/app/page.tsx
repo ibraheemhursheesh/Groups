@@ -1,4 +1,5 @@
 import { getComments } from "@/app/actions/comments";
+import { signIn } from "@/app/actions/authen";
 
 function GoogleMark() {
   return (
@@ -48,13 +49,22 @@ export default async function Home() {
           </p>
         </div>
 
-        <a
+        {/* <a
           href="/auth/google"
           className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-indigo-100 disabled:cursor-wait disabled:opacity-60"
         >
           <GoogleMark />
           Continue with Google
-        </a>
+        </a> */}
+        <form action={signIn}>
+          <button
+            type="submit"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-indigo-100 disabled:cursor-wait disabled:opacity-60"
+          >
+            <GoogleMark />
+            Continue with Google
+          </button>
+        </form>
 
         <p className="mt-8 text-center text-xs leading-5 text-slate-400">
           By continuing, you agree to the Groupss terms and privacy policy.
