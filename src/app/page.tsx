@@ -1,3 +1,5 @@
+import { getComments } from "@/app/actions/comments";
+
 function GoogleMark() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
@@ -21,7 +23,10 @@ function GoogleMark() {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const comments = await getComments();
+
+  console.log("Comments from the database: ", comments);
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f8fc] px-6 py-12 text-slate-950">
       <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-indigo-200/40 blur-3xl" />
