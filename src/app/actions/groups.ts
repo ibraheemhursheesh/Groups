@@ -3,7 +3,7 @@
 import { auth } from "@/app/lib/auth";
 import { db } from "@/index";
 import { joinRequests, posts, user, organization, member as memberTable } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { uploadGroupCover, supabase, STORAGE_BUCKET } from "@/app/lib/supabase";
@@ -129,7 +129,7 @@ export const getGroupPageData = async (groupId: string) => {
         .from(posts)
         .where(and(eq(posts.groupId, groupId), eq(posts.status, "approved")))
         .leftJoin(user, eq(posts.userId, user.id))
-        .orderBy(posts.createdAt)
+        .orderBy(desc(posts.createdAt))
     : [];
 
   return {
