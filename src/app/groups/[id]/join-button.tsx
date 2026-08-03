@@ -2,23 +2,52 @@
 
 import { Button } from "@/components/ui/button";
 import { requestToJoin } from "@/app/actions/groups";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 
-export function JoinButton({ groupId }: { groupId: string }) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
+type View = "idle" | "pending";
 
-  const handleJoin = async () => {
-    setLoading(true);
-    await requestToJoin(groupId);
-    setLoading(false);
-    router.refresh();
+export function JoinButton({
+  groupId,
+  hasExistingRequest,
+}: {
+  groupId: string;
+  hasExistingRequest: boolean;
+}) {
+  const [realView, setRealView] = useState<View>(
+    hasExistingRequest ? "pending" : "idle",
+  );
+  const [optimisticView, setOptimisticView] = useOptimistic(
+    realView,
+    (_: View, next: View) => next,
+  );
+  const [isPending, startTransition] = useTransition();
+
+  const handleJoin = () => {
+    startTransition(async () => {
+      setOptimisticView("pending");
+
+      try {
+        await requestToJoin(groupId);
+        setRealView("pending");
+      } catch {
+        setRealView("idle");
+      }
+    });
   };
 
+  if (optimisticView === "pending") {
+    return (
+      <p className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+        {isPending
+          ? "Sending your join request..."
+          : "Your join request is pending admin approval."}
+      </p>
+    );
+  }
+
   return (
-    <Button onClick={handleJoin} disabled={loading}>
-      {loading ? "Requesting..." : "Request to join"}
+    <Button onClick={handleJoin} disabled={isPending}>
+      Request to join
     </Button>
   );
 }

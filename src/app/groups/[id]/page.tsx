@@ -42,14 +42,8 @@ export default async function GroupPage({
         )}
       </div>
 
-      {!currentMember && !joinRequest && (
-        <JoinButton groupId={id} />
-      )}
-
-      {joinRequest && !currentMember && (
-        <p className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-          Your join request is pending admin approval.
-        </p>
+      {!currentMember && (
+        <JoinButton groupId={id} hasExistingRequest={!!joinRequest} />
       )}
 
       {currentMember && (
