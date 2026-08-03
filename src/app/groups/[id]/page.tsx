@@ -31,6 +31,13 @@ export default async function GroupPage({
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
       <div className="mb-8">
+        {org.logo && (
+          <img
+            src={org.logo}
+            alt={`${org.name} cover`}
+            className="mb-6 aspect-video w-full rounded-xl border object-cover"
+          />
+        )}
         <h1 className="text-2xl font-bold tracking-tight">{org.name}</h1>
         {metadata?.description && (
           <p className="mt-2 text-muted-foreground">{metadata.description}</p>

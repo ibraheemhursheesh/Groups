@@ -6,6 +6,7 @@ import { joinRequests, posts, user, organization, member as memberTable } from "
 import { eq, and } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { uploadGroupCover } from "@/app/lib/supabase";
 
 export const createGroup = async (formData: FormData) => {
   const session = await auth.api.getSession({
@@ -18,15 +19,24 @@ export const createGroup = async (formData: FormData) => {
 
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
+  const coverFile = formData.get("cover") as File | null;
 
   if (!name || name.trim().length === 0) {
     throw new Error("Group name is required");
+  }
+
+  const groupId = crypto.randomUUID();
+
+  let logo: string | undefined;
+  if (coverFile && coverFile.size > 0) {
+    logo = (await uploadGroupCover(coverFile, groupId)) ?? undefined;
   }
 
   const result = await auth.api.createOrganization({
     body: {
       name: name.trim(),
       slug: name.trim().toLowerCase().replace(/\s+/g, "-") + "-" + crypto.randomUUID().slice(0, 8),
+      logo,
       metadata: { description: description?.trim() || "" },
       userId: session.user.id,
     },

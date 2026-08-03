@@ -106,23 +106,36 @@ async function Dashboard({ session }: { session: any }) {
         </p>
       ) : (
         <ul className="grid gap-3">
-          {organizations.map((org: any) => (
-            <li key={org.id}>
-              <Link
-                href={`/groups/${org.id}`}
-                className="block rounded-xl border p-4 transition hover:border-indigo-200 hover:bg-indigo-50/50"
-              >
-                <p className="font-medium">{org.name}</p>
-                {org.metadata &&
-                  typeof org.metadata === "object" &&
-                  org.metadata.description && (
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {org.metadata.description}
-                    </p>
+          {organizations.map((org: any) => {
+            const meta =
+              typeof org.metadata === "string"
+                ? JSON.parse(org.metadata || "{}")
+                : (org.metadata || {});
+            return (
+              <li key={org.id}>
+                <Link
+                  href={`/groups/${org.id}`}
+                  className="block overflow-hidden rounded-xl border transition hover:border-indigo-200 hover:bg-indigo-50/50"
+                >
+                  {org.logo && (
+                    <img
+                      src={org.logo}
+                      alt={org.name}
+                      className="aspect-video w-full object-cover"
+                    />
                   )}
-              </Link>
-            </li>
-          ))}
+                  <div className="p-4">
+                    <p className="font-medium">{org.name}</p>
+                    {meta?.description && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {meta.description}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

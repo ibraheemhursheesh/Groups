@@ -1,16 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { PlusIcon } from "lucide-react";
+import { ImageIcon, PlusIcon } from "lucide-react";
 import { createGroup } from "@/app/actions/groups";
 
 export function CreateGroupDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPreview(URL.createObjectURL(file));
+    } else {
+      setPreview(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -21,16 +32,17 @@ export function CreateGroupDialog() {
 
     setLoading(false);
     setOpen(false);
+    setPreview(null);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setPreview(null); }}>
       <DialogTrigger render={<Button variant="outline"><PlusIcon /> Create Group</Button>} />
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Create a group</DialogTitle>
           <DialogDescription>
-            Groups help your team stay organized. Give your group a name and description to get started.
+            Give your group a name, description, and optional cover image.
           </DialogDescription>
         </DialogHeader>
         <form id="create-group-form" onSubmit={handleSubmit} className="grid gap-4">
@@ -59,6 +71,49 @@ export function CreateGroupDialog() {
               rows={3}
               maxLength={500}
               disabled={loading}
+            />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="cover" className="text-sm font-medium">
+              Cover image
+            </label>
+            {preview ? (
+              <div className="relative overflow-hidden rounded-lg border">
+                <img
+                  src={preview}
+                  alt="Cover preview"
+                  className="aspect-video w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreview(null);
+                    if (fileRef.current) fileRef.current.value = "";
+                  }}
+                  className="absolute right-2 top-2 rounded-md bg-black/50 px-2 py-1 text-xs text-white hover:bg-black/70"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm text-muted-foreground transition hover:border-indigo-300 hover:text-indigo-600"
+              >
+                <ImageIcon className="size-6" />
+                Click to upload a cover image
+              </button>
+            )}
+            <input
+              ref={fileRef}
+              id="cover"
+              name="cover"
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              disabled={loading}
+              className="hidden"
             />
           </div>
         </form>
