@@ -4,13 +4,22 @@ import { Button } from "@/components/ui/button";
 import { deletePost } from "@/app/actions/groups";
 import { useRouter } from "next/navigation";
 
+type Post = {
+  id: string;
+  userId: string;
+  userName: string | null;
+  content: string;
+  imageUrl: string | null;
+  createdAt: Date;
+};
+
 export function PostList({
   posts,
   currentUserId,
   isAdmin,
   groupId,
 }: {
-  posts: { id: string; userId: string; userName: string | null; content: string; createdAt: Date }[];
+  posts: Post[];
   currentUserId: string;
   isAdmin: boolean;
   groupId: string;
@@ -35,8 +44,8 @@ export function PostList({
       <h3 className="font-semibold">Posts</h3>
       <ul className="space-y-3">
         {posts.map((post) => (
-          <li key={post.id} className="rounded-xl border p-4">
-            <div className="flex items-center justify-between">
+          <li key={post.id} className="overflow-hidden rounded-xl border">
+            <div className="flex items-center justify-between px-4 pt-4">
               <span className="text-xs text-muted-foreground">
                 {post.userName || post.userId}
                 {" "}
@@ -48,7 +57,14 @@ export function PostList({
                 </Button>
               )}
             </div>
-            <p className="mt-2 text-sm">{post.content}</p>
+            <p className="px-4 pb-4 pt-2 text-sm">{post.content}</p>
+            {post.imageUrl && (
+              <img
+                src={post.imageUrl}
+                alt="Post image"
+                className="w-full object-cover"
+              />
+            )}
           </li>
         ))}
       </ul>

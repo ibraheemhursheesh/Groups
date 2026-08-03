@@ -6,7 +6,7 @@ import { joinRequests, posts, user, organization, member as memberTable } from "
 import { eq, and } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { uploadGroupCover } from "@/app/lib/supabase";
+import { uploadGroupCover, supabase, STORAGE_BUCKET } from "@/app/lib/supabase";
 
 export const createGroup = async (formData: FormData) => {
   const session = await auth.api.getSession({
@@ -117,7 +117,7 @@ export const getGroupPageData = async (groupId: string) => {
 
   const pendingPosts = currentMember?.role === "admin"
     ? await db
-        .select({ id: posts.id, userId: posts.userId, userName: user.name, content: posts.content, createdAt: posts.createdAt })
+        .select({ id: posts.id, userId: posts.userId, userName: user.name, content: posts.content, imageUrl: posts.imageUrl, createdAt: posts.createdAt })
         .from(posts)
         .where(and(eq(posts.groupId, groupId), eq(posts.status, "pending")))
         .leftJoin(user, eq(posts.userId, user.id))
@@ -125,7 +125,7 @@ export const getGroupPageData = async (groupId: string) => {
 
   const approvedPosts = currentMember
     ? await db
-        .select({ id: posts.id, userId: posts.userId, userName: user.name, content: posts.content, createdAt: posts.createdAt })
+        .select({ id: posts.id, userId: posts.userId, userName: user.name, content: posts.content, imageUrl: posts.imageUrl, createdAt: posts.createdAt })
         .from(posts)
         .where(and(eq(posts.groupId, groupId), eq(posts.status, "approved")))
         .leftJoin(user, eq(posts.userId, user.id))
@@ -283,6 +283,7 @@ export const createPost = async (formData: FormData) => {
 
   const groupId = formData.get("groupId") as string;
   const content = formData.get("content") as string;
+  const imageFile = formData.get("image") as File | null;
 
   if (!content || content.trim().length === 0) {
     throw new Error("Post content is required");
@@ -303,11 +304,32 @@ export const createPost = async (formData: FormData) => {
 
   const isAdmin = currentMember.role === "admin";
 
+  const postId = crypto.randomUUID();
+  let imageUrl: string | null = null;
+
+  if (imageFile && imageFile.size > 0) {
+    const ext = imageFile.name.split(".").pop() || "png";
+    const path = `${groupId}/posts/${postId}.${ext}`;
+    const uploadResult = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(path, imageFile, {
+        contentType: imageFile.type,
+        upsert: false,
+      });
+    if (!uploadResult.error) {
+      const { data } = supabase.storage
+        .from(STORAGE_BUCKET)
+        .getPublicUrl(path);
+      imageUrl = data.publicUrl;
+    }
+  }
+
   await db.insert(posts).values({
-    id: crypto.randomUUID(),
+    id: postId,
     groupId,
     userId: session.user.id,
     content: content.trim(),
+    imageUrl,
     status: isAdmin ? "approved" : "pending",
     createdAt: new Date(),
   });

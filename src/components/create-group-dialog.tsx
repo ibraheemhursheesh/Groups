@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,11 +13,35 @@ export function CreateGroupDialog() {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const objectUrlRef = useRef<string | null>(null);
+
+  const clearPreview = useCallback(() => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+    setPreview(null);
+    if (fileRef.current) fileRef.current.value = "";
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
+    };
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
     if (file) {
-      setPreview(URL.createObjectURL(file));
+      const url = URL.createObjectURL(file);
+      objectUrlRef.current = url;
+      setPreview(url);
     } else {
       setPreview(null);
     }
@@ -32,11 +56,11 @@ export function CreateGroupDialog() {
 
     setLoading(false);
     setOpen(false);
-    setPreview(null);
+    clearPreview();
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setPreview(null); }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) clearPreview(); }}>
       <DialogTrigger render={<Button variant="outline"><PlusIcon /> Create Group</Button>} />
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -86,10 +110,7 @@ export function CreateGroupDialog() {
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    setPreview(null);
-                    if (fileRef.current) fileRef.current.value = "";
-                  }}
+                  onClick={clearPreview}
                   className="absolute right-2 top-2 rounded-md bg-black/50 px-2 py-1 text-xs text-white hover:bg-black/70"
                 >
                   Remove

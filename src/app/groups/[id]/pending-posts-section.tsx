@@ -10,6 +10,7 @@ type PendingPost = {
   userId: string;
   userName: string | null;
   content: string;
+  imageUrl: string | null;
   createdAt: Date;
 };
 
@@ -34,32 +35,26 @@ export function PendingPostsSection({
   const approve = async (postId: string) => {
     startTransition(async () => {
       removeOptimisticPost(postId);
-
       try {
         await handlePostApproval(postId, groupId, "approve");
         setRealPosts((currentPosts) =>
           currentPosts.filter((post) => post.id !== postId),
         );
         router.refresh();
-      } catch {
-        // Let the optimistic state roll back to the real list on failure.
-      }
+      } catch {}
     });
   };
 
   const reject = async (postId: string) => {
     startTransition(async () => {
       removeOptimisticPost(postId);
-
       try {
         await handlePostApproval(postId, groupId, "reject");
         setRealPosts((currentPosts) =>
           currentPosts.filter((post) => post.id !== postId),
         );
         router.refresh();
-      } catch {
-        // Let the optimistic state roll back to the real list on failure.
-      }
+      } catch {}
     });
   };
 
@@ -70,8 +65,8 @@ export function PendingPostsSection({
       </h3>
       <ul className="space-y-3">
         {optimisticPosts.map((post) => (
-          <li key={post.id} className="rounded-lg bg-muted/50 px-4 py-3">
-            <div className="flex items-center justify-between">
+          <li key={post.id} className="overflow-hidden rounded-lg bg-muted/50">
+            <div className="flex items-center justify-between px-4 pt-3">
               <span className="text-xs text-muted-foreground">
                 {post.userName || post.userId}
               </span>
@@ -94,7 +89,14 @@ export function PendingPostsSection({
                 </Button>
               </div>
             </div>
-            <p className="mt-2 text-sm">{post.content}</p>
+            <p className="px-4 pb-4 pt-2 text-sm">{post.content}</p>
+            {post.imageUrl && (
+              <img
+                src={post.imageUrl}
+                alt="Post image"
+                className="w-full object-cover"
+              />
+            )}
           </li>
         ))}
       </ul>
