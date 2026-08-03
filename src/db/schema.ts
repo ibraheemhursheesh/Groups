@@ -22,7 +22,6 @@ export const joinRequests = pgTable("join_requests", {
     .text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  status: t.text("status").notNull(),
   createdAt: t
     .timestamp("created_at", { precision: 6, withTimezone: true })
     .notNull(),

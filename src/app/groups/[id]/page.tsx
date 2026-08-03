@@ -46,19 +46,10 @@ export default async function GroupPage({
         <JoinButton groupId={id} />
       )}
 
-      {joinRequest?.status === "pending" && (
+      {joinRequest && !currentMember && (
         <p className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
           Your join request is pending admin approval.
         </p>
-      )}
-
-      {joinRequest?.status === "rejected" && (
-        <div>
-          <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            Your join request was rejected.
-          </p>
-          <JoinButton groupId={id} />
-        </div>
       )}
 
       {currentMember && (

@@ -94,7 +94,6 @@ export const getGroupPageData = async (groupId: string) => {
           and(
             eq(joinRequests.groupId, groupId),
             eq(joinRequests.userId, session.user.id),
-            eq(joinRequests.status, "pending"),
           ),
         );
 
@@ -102,7 +101,7 @@ export const getGroupPageData = async (groupId: string) => {
     ? await db
         .select({ id: joinRequests.id, userId: joinRequests.userId, userName: user.name, userImage: user.image, createdAt: joinRequests.createdAt })
         .from(joinRequests)
-        .where(and(eq(joinRequests.groupId, groupId), eq(joinRequests.status, "pending")))
+        .where(eq(joinRequests.groupId, groupId))
         .leftJoin(user, eq(joinRequests.userId, user.id))
     : [];
 
@@ -160,7 +159,6 @@ export const requestToJoin = async (groupId: string) => {
     id: crypto.randomUUID(),
     groupId,
     userId: session.user.id,
-    status: "pending",
     createdAt: new Date(),
   });
 };
@@ -183,10 +181,7 @@ export const handleJoinRequest = async (requestId: string, groupId: string, acti
     throw new Error("Invalid request");
   }
 
-  await db
-    .update(joinRequests)
-    .set({ status: action === "approve" ? "approved" : "rejected" })
-    .where(eq(joinRequests.id, requestId));
+  await db.delete(joinRequests).where(eq(joinRequests.id, requestId));
 
   if (action === "approve") {
     await auth.api.addMember({
@@ -253,6 +248,9 @@ export const deleteGroup = async (groupId: string) => {
   if (!session) {
     throw new Error("Not authenticated");
   }
+
+  await db.delete(posts).where(eq(posts.groupId, groupId));
+  await db.delete(joinRequests).where(eq(joinRequests.groupId, groupId));
 
   await auth.api.deleteOrganization({
     headers: await headers(),
