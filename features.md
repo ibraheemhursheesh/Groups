@@ -8,5 +8,5 @@ edit posts
 
 fixes:
 * use supabase ssr package
-* revokeObjectURL
+<!-- * revokeObjectURL -->
 * protect Routes

@@ -46,6 +46,11 @@ export function PostsWrapper({
   const handlePostSubmit = async (formData: FormData) => {
     formData.set("groupId", groupId);
 
+    // Generate a local object URL for the image so the optimistic post immediately shows it
+    const imageFile = formData.get("image") as File | null;
+    const optimisticImageUrl =
+      imageFile && imageFile.size > 0 ? URL.createObjectURL(imageFile) : null;
+
     if (isAdmin) {
       setApprovedPosts((prev) => [
         {
@@ -53,7 +58,7 @@ export function PostsWrapper({
           userId: currentUserId,
           userName: currentUserName,
           content: (formData.get("content") as string)?.trim() || "",
-          imageUrl: null,
+          imageUrl: optimisticImageUrl,
           createdAt: new Date(),
         },
         ...prev,
@@ -63,7 +68,7 @@ export function PostsWrapper({
         {
           id: `optimistic-${crypto.randomUUID()}`,
           content: (formData.get("content") as string)?.trim() || "",
-          imageUrl: null,
+          imageUrl: optimisticImageUrl,
           createdAt: new Date(),
         },
         ...prev,
@@ -71,7 +76,7 @@ export function PostsWrapper({
     }
 
     await createPost(formData);
-  };
+  };;
 
   const handleApprove = async (postId: string) => {
     const post = pendingPosts.find((p) => p.id === postId);
@@ -94,7 +99,11 @@ export function PostsWrapper({
 
   return (
     <>
-      <PostForm groupId={groupId} isAdmin={isAdmin} onOptimisticSubmit={handlePostSubmit} />
+      <PostForm
+        groupId={groupId}
+        isAdmin={isAdmin}
+        onOptimisticSubmit={handlePostSubmit}
+      />
 
       {isAdmin && pendingPosts.length > 0 && (
         <PendingPostsSection
