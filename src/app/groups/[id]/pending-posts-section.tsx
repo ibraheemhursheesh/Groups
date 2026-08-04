@@ -1,9 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { handlePostApproval } from "@/app/actions/groups";
-import { useRouter } from "next/navigation";
-import { useOptimistic, useState, useTransition } from "react";
+import { useTransition } from "react";
 
 type PendingPost = {
   id: string;
@@ -15,56 +13,35 @@ type PendingPost = {
 };
 
 export function PendingPostsSection({
-  groupId,
   posts,
+  onApprove,
+  onReject,
 }: {
-  groupId: string;
   posts: PendingPost[];
+  onApprove: (postId: string) => Promise<void>;
+  onReject: (postId: string) => Promise<void>;
 }) {
-  const router = useRouter();
-  const [realPosts, setRealPosts] = useState(posts);
-  const [optimisticPosts, removeOptimisticPost] = useOptimistic(
-    realPosts,
-    (currentPosts: PendingPost[], postId: string) =>
-      currentPosts.filter((post) => post.id !== postId),
-  );
   const [isPending, startTransition] = useTransition();
 
-  if (optimisticPosts.length === 0) return null;
-
-  const approve = async (postId: string) => {
-    startTransition(async () => {
-      removeOptimisticPost(postId);
-      try {
-        await handlePostApproval(postId, groupId, "approve");
-        setRealPosts((currentPosts) =>
-          currentPosts.filter((post) => post.id !== postId),
-        );
-        router.refresh();
-      } catch {}
+  const handleApprove = (postId: string) => {
+    startTransition(() => {
+      onApprove(postId);
     });
   };
 
-  const reject = async (postId: string) => {
-    startTransition(async () => {
-      removeOptimisticPost(postId);
-      try {
-        await handlePostApproval(postId, groupId, "reject");
-        setRealPosts((currentPosts) =>
-          currentPosts.filter((post) => post.id !== postId),
-        );
-        router.refresh();
-      } catch {}
+  const handleReject = (postId: string) => {
+    startTransition(() => {
+      onReject(postId);
     });
   };
 
   return (
     <div className="mb-6 rounded-xl border p-4">
       <h3 className="mb-3 font-semibold">
-        Pending posts ({optimisticPosts.length})
+        Pending posts ({posts.length})
       </h3>
       <ul className="space-y-3">
-        {optimisticPosts.map((post) => (
+        {posts.map((post) => (
           <li key={post.id} className="overflow-hidden rounded-lg bg-muted/50">
             <div className="flex items-center justify-between px-4 pt-3">
               <span className="text-xs text-muted-foreground">
@@ -74,7 +51,7 @@ export function PendingPostsSection({
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={() => approve(post.id)}
+                  onClick={() => handleApprove(post.id)}
                   disabled={isPending}
                 >
                   Approve
@@ -82,7 +59,7 @@ export function PendingPostsSection({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => reject(post.id)}
+                  onClick={() => handleReject(post.id)}
                   disabled={isPending}
                 >
                   Reject

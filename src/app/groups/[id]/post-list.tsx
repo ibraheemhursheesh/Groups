@@ -1,8 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { deletePost } from "@/app/actions/groups";
-import { useRouter } from "next/navigation";
 
 type Post = {
   id: string;
@@ -17,20 +15,13 @@ export function PostList({
   posts,
   currentUserId,
   isAdmin,
-  groupId,
+  onDelete,
 }: {
   posts: Post[];
   currentUserId: string;
   isAdmin: boolean;
-  groupId: string;
+  onDelete: (postId: string) => void;
 }) {
-  const router = useRouter();
-
-  const handleDelete = async (postId: string) => {
-    await deletePost(postId, groupId);
-    router.refresh();
-  };
-
   if (posts.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
@@ -52,7 +43,7 @@ export function PostList({
                 {new Date(post.createdAt).toLocaleDateString()}
               </span>
               {(isAdmin || post.userId === currentUserId) && (
-                <Button variant="ghost" size="xs" onClick={() => handleDelete(post.id)}>
+                <Button variant="ghost" size="xs" onClick={() => onDelete(post.id)}>
                   Delete
                 </Button>
               )}

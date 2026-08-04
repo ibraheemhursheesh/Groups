@@ -2,13 +2,20 @@
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { createPost } from "@/app/actions/groups";
-import { useRouter } from "next/navigation";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { ImageIcon } from "lucide-react";
 
-export function PostForm({ groupId }: { groupId: string }) {
-  const router = useRouter();
+interface PostFormProps {
+  groupId: string;
+  isAdmin: boolean;
+  onOptimisticSubmit: (formData: FormData) => Promise<void>;
+}
+
+export function PostForm({
+  groupId,
+  isAdmin,
+  onOptimisticSubmit,
+}: PostFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
@@ -50,11 +57,10 @@ export function PostForm({ groupId }: { groupId: string }) {
     setLoading(true);
     const formData = new FormData(e.currentTarget);
     formData.set("groupId", groupId);
-    await createPost(formData);
+    await onOptimisticSubmit(formData);
     formRef.current?.reset();
     clearPreview();
     setLoading(false);
-    router.refresh();
   };
 
   return (

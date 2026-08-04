@@ -132,6 +132,25 @@ export const getGroupPageData = async (groupId: string) => {
         .orderBy(desc(posts.createdAt))
     : [];
 
+  const myPendingPosts = currentMember
+    ? await db
+        .select({
+          id: posts.id,
+          content: posts.content,
+          imageUrl: posts.imageUrl,
+          createdAt: posts.createdAt,
+        })
+        .from(posts)
+        .where(
+          and(
+            eq(posts.groupId, groupId),
+            eq(posts.userId, session.user.id),
+            eq(posts.status, "pending"),
+          ),
+        )
+        .orderBy(desc(posts.createdAt))
+    : [];
+
   return {
     organization: orgResult || org,
     currentMember: currentMember || null,
@@ -139,6 +158,7 @@ export const getGroupPageData = async (groupId: string) => {
     pendingRequests,
     pendingPosts,
     approvedPosts,
+    myPendingPosts,
   };
 };
 
@@ -317,9 +337,7 @@ export const createPost = async (formData: FormData) => {
         upsert: false,
       });
     if (!uploadResult.error) {
-      const { data } = supabase.storage
-        .from(STORAGE_BUCKET)
-        .getPublicUrl(path);
+      const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
       imageUrl = data.publicUrl;
     }
   }
@@ -333,7 +351,7 @@ export const createPost = async (formData: FormData) => {
     status: isAdmin ? "approved" : "pending",
     createdAt: new Date(),
   });
-};
+}
 
 export const handlePostApproval = async (postId: string, groupId: string, action: "approve" | "reject") => {
   const session = await auth.api.getSession({

@@ -1,9 +1,7 @@
 import { getGroupPageData } from "@/app/actions/groups";
 import { JoinButton } from "./join-button";
-import { PendingPostsSection } from "./pending-posts-section";
 import { PendingRequestsSection } from "./pending-requests-section";
-import { PostForm } from "./post-form";
-import { PostList } from "./post-list";
+import { PostsWrapper } from "./posts-wrapper";
 import { GroupActions } from "./leave-button";
 
 export default async function GroupPage({
@@ -22,7 +20,7 @@ export default async function GroupPage({
     );
   }
 
-  const { organization, currentMember, joinRequest, pendingRequests, pendingPosts, approvedPosts } = data;
+  const { organization, currentMember, joinRequest, pendingRequests, pendingPosts, approvedPosts, myPendingPosts } = data;
   const org = organization;
   const metadata = typeof org.metadata === "string"
     ? JSON.parse(org.metadata || "{}")
@@ -62,20 +60,14 @@ export default async function GroupPage({
             />
           )}
 
-          <PostForm groupId={id} />
-
-          {currentMember.role === "admin" && pendingPosts.length > 0 && (
-            <PendingPostsSection
-              groupId={id}
-              posts={pendingPosts as any[]}
-            />
-          )}
-
-          <PostList
-            posts={approvedPosts as any[]}
-            currentUserId={currentMember.userId}
-            isAdmin={currentMember.role === "admin"}
+          <PostsWrapper
             groupId={id}
+            isAdmin={currentMember.role === "admin"}
+            currentUserId={currentMember.userId}
+            currentUserName={(currentMember as any).user?.name || null}
+            initialApprovedPosts={approvedPosts as any[]}
+            initialPendingPosts={pendingPosts as any[]}
+            initialMyPendingPosts={myPendingPosts as any[]}
           />
 
           <GroupActions
