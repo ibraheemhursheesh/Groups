@@ -37,9 +37,7 @@ export function PendingPostsSection({
 
   return (
     <div className="mb-6 rounded-xl border p-4">
-      <h3 className="mb-3 font-semibold">
-        Pending posts ({posts.length})
-      </h3>
+      <h3 className="mb-3 font-semibold">Pending posts ({posts.length})</h3>
       <ul className="space-y-3">
         {posts.map((post) => (
           <li key={post.id} className="overflow-hidden rounded-lg bg-muted/50">
@@ -66,7 +64,7 @@ export function PendingPostsSection({
                 </Button>
               </div>
             </div>
-            <p className="px-4 pb-4 pt-2 text-sm">{post.content}</p>
+            <p className="px-4 pb-4 pt-2 text-sm whitespace-pre-wrap">{post.content}</p>
             {post.imageUrl && (
               <img
                 src={post.imageUrl}

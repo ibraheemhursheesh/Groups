@@ -3,7 +3,7 @@
 import { auth } from "@/app/lib/auth";
 import { db } from "@/index";
 import { joinRequests, posts, user, organization, member as memberTable } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, lt } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { uploadGroupCover, supabase, STORAGE_BUCKET } from "@/app/lib/supabase";
@@ -63,6 +63,49 @@ export const listAllGroups = async () => {
   return allOrgs;
 };
 
+export const getApprovedPosts = async (
+  groupId: string,
+  cursor?: string,
+  limit = 10,
+) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    throw new Error("Not authenticated");
+  }
+
+  const conditions = [eq(posts.groupId, groupId), eq(posts.status, "approved")];
+  if (cursor) {
+    const cursorDate = new Date(cursor);
+    conditions.push(lt(posts.createdAt, cursorDate));
+  }
+
+  const result = await db
+    .select({
+      id: posts.id,
+      userId: posts.userId,
+      userName: user.name,
+      content: posts.content,
+      imageUrl: posts.imageUrl,
+      createdAt: posts.createdAt,
+    })
+    .from(posts)
+    .where(and(...conditions))
+    .leftJoin(user, eq(posts.userId, user.id))
+    .orderBy(desc(posts.createdAt))
+    .limit(limit + 1);
+
+  const hasMore = result.length > limit;
+  const items = hasMore ? result.slice(0, limit) : result;
+  const nextCursor = hasMore
+    ? (items[items.length - 1].createdAt?.toISOString() ?? null)
+    : null;
+
+  return { posts: items, nextCursor };
+};
+
 export const getGroupPageData = async (groupId: string) => {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -107,30 +150,41 @@ export const getGroupPageData = async (groupId: string) => {
           ),
         );
 
-  const pendingRequests = currentMember?.role === "admin"
-    ? await db
-        .select({ id: joinRequests.id, userId: joinRequests.userId, userName: user.name, userImage: user.image, createdAt: joinRequests.createdAt })
-        .from(joinRequests)
-        .where(eq(joinRequests.groupId, groupId))
-        .leftJoin(user, eq(joinRequests.userId, user.id))
-    : [];
+  const pendingRequests =
+    currentMember?.role === "admin"
+      ? await db
+          .select({
+            id: joinRequests.id,
+            userId: joinRequests.userId,
+            userName: user.name,
+            userImage: user.image,
+            createdAt: joinRequests.createdAt,
+          })
+          .from(joinRequests)
+          .where(eq(joinRequests.groupId, groupId))
+          .leftJoin(user, eq(joinRequests.userId, user.id))
+      : [];
 
-  const pendingPosts = currentMember?.role === "admin"
-    ? await db
-        .select({ id: posts.id, userId: posts.userId, userName: user.name, content: posts.content, imageUrl: posts.imageUrl, createdAt: posts.createdAt })
-        .from(posts)
-        .where(and(eq(posts.groupId, groupId), eq(posts.status, "pending")))
-        .leftJoin(user, eq(posts.userId, user.id))
-    : [];
+  const pendingPosts =
+    currentMember?.role === "admin"
+      ? await db
+          .select({
+            id: posts.id,
+            userId: posts.userId,
+            userName: user.name,
+            content: posts.content,
+            imageUrl: posts.imageUrl,
+            createdAt: posts.createdAt,
+          })
+          .from(posts)
+          .where(and(eq(posts.groupId, groupId), eq(posts.status, "pending")))
+          .leftJoin(user, eq(posts.userId, user.id))
+      : [];
 
-  const approvedPosts = currentMember
-    ? await db
-        .select({ id: posts.id, userId: posts.userId, userName: user.name, content: posts.content, imageUrl: posts.imageUrl, createdAt: posts.createdAt })
-        .from(posts)
-        .where(and(eq(posts.groupId, groupId), eq(posts.status, "approved")))
-        .leftJoin(user, eq(posts.userId, user.id))
-        .orderBy(desc(posts.createdAt))
-    : [];
+  // Use getApprovedPosts for the initial page to get cursor-based pagination
+  const { posts: approvedPosts, nextCursor } = currentMember
+    ? await getApprovedPosts(groupId, undefined, 10)
+    : { posts: [], nextCursor: null };
 
   const myPendingPosts = currentMember
     ? await db
@@ -158,9 +212,10 @@ export const getGroupPageData = async (groupId: string) => {
     pendingRequests,
     pendingPosts,
     approvedPosts,
+    approvedNextCursor: nextCursor,
     myPendingPosts,
   };
-};
+};;
 
 export const requestToJoin = async (groupId: string) => {
   const session = await auth.api.getSession({

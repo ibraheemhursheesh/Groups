@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { PostForm } from "./post-form";
 import { PendingPostsSection } from "./pending-posts-section";
 import { PostList } from "./post-list";
-import { createPost, handlePostApproval, deletePost } from "@/app/actions/groups";
+import {
+  createPost,
+  handlePostApproval,
+  deletePost,
+  getApprovedPosts,
+} from "@/app/actions/groups";
 
 type Post = {
   id: string;
@@ -28,6 +33,7 @@ export function PostsWrapper({
   currentUserId,
   currentUserName,
   initialApprovedPosts,
+  initialNextCursor,
   initialPendingPosts,
   initialMyPendingPosts,
 }: {
@@ -36,12 +42,15 @@ export function PostsWrapper({
   currentUserId: string;
   currentUserName: string | null;
   initialApprovedPosts: Post[];
+  initialNextCursor: string | null;
   initialPendingPosts: Post[];
   initialMyPendingPosts: MyPendingPost[];
 }) {
   const [approvedPosts, setApprovedPosts] = useState(initialApprovedPosts);
   const [pendingPosts, setPendingPosts] = useState(initialPendingPosts);
   const [myPendingPosts, setMyPendingPosts] = useState(initialMyPendingPosts);
+  const [cursor, setCursor] = useState<string | null>(initialNextCursor);
+  const [loadingMore, startLoadMore] = useTransition();
 
   const handlePostSubmit = async (formData: FormData) => {
     formData.set("groupId", groupId);
@@ -76,7 +85,7 @@ export function PostsWrapper({
     }
 
     await createPost(formData);
-  };;
+  };
 
   const handleApprove = async (postId: string) => {
     const post = pendingPosts.find((p) => p.id === postId);
@@ -95,6 +104,15 @@ export function PostsWrapper({
   const handleDelete = async (postId: string) => {
     setApprovedPosts((prev) => prev.filter((p) => p.id !== postId));
     await deletePost(postId, groupId);
+  };
+
+  const handleLoadMore = () => {
+    if (!cursor) return;
+    startLoadMore(async () => {
+      const result = await getApprovedPosts(groupId, cursor, 10);
+      setApprovedPosts((prev) => [...prev, ...result.posts]);
+      setCursor(result.nextCursor);
+    });
   };
 
   return (
@@ -140,6 +158,9 @@ export function PostsWrapper({
         currentUserId={currentUserId}
         isAdmin={isAdmin}
         onDelete={handleDelete}
+        hasMore={cursor !== null}
+        loadingMore={loadingMore}
+        onLoadMore={handleLoadMore}
       />
     </>
   );

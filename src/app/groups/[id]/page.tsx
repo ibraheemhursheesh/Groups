@@ -20,7 +20,16 @@ export default async function GroupPage({
     );
   }
 
-  const { organization, currentMember, joinRequest, pendingRequests, pendingPosts, approvedPosts, myPendingPosts } = data;
+  const {
+    organization,
+    currentMember,
+    joinRequest,
+    pendingRequests,
+    pendingPosts,
+    approvedPosts,
+    approvedNextCursor,
+    myPendingPosts,
+  } = data;
   const org = organization;
   const metadata = typeof org.metadata === "string"
     ? JSON.parse(org.metadata || "{}")
@@ -66,14 +75,12 @@ export default async function GroupPage({
             currentUserId={currentMember.userId}
             currentUserName={(currentMember as any).user?.name || null}
             initialApprovedPosts={approvedPosts as any[]}
+            initialNextCursor={approvedNextCursor}
             initialPendingPosts={pendingPosts as any[]}
             initialMyPendingPosts={myPendingPosts as any[]}
           />
 
-          <GroupActions
-            groupId={id}
-            isAdmin={currentMember.role === "admin"}
-          />
+          <GroupActions groupId={id} isAdmin={currentMember.role === "admin"} />
         </>
       )}
     </main>
