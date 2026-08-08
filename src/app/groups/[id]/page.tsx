@@ -2,6 +2,7 @@ import { getGroupPageData } from "@/app/actions/groups";
 import { JoinButton } from "./join-button";
 import { PostsWrapper } from "./posts-wrapper";
 import { GroupActions } from "./leave-button";
+import { MembersList } from "./members-list";
 
 export default async function GroupPage({
   params,
@@ -29,6 +30,7 @@ export default async function GroupPage({
     approvedPosts,
     approvedNextCursor,
     myPendingPosts,
+    members,
   } = data;
   const org = organization;
   const metadata = typeof org.metadata === "string"
@@ -50,9 +52,17 @@ export default async function GroupPage({
           <p className="mt-2 text-muted-foreground">{metadata.description}</p>
         )}
         {currentMember && (
-          <p className="mt-1 text-xs text-muted-foreground">
-            Role: {currentMember.role}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              Role: {currentMember.role}
+            </p>
+            <MembersList
+              members={members as any[]}
+              currentUserId={currentMember.userId}
+              isAdmin={currentMember.role === "admin"}
+              groupId={id}
+            />
+          </div>
         )}
       </div>
 

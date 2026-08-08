@@ -214,6 +214,14 @@ export const getGroupPageData = async (groupId: string) => {
         .orderBy(desc(posts.createdAt))
     : [];
 
+  const allMembers = (orgResult?.members ?? []).map((m) => ({
+    id: m.id,
+    userId: m.userId,
+    userName: m.user?.name ?? null,
+    userImage: m.user?.image ?? null,
+    role: m.role as string,
+  }));
+
   return {
     organization: orgResult || org,
     currentMember: currentMember || null,
@@ -224,6 +232,7 @@ export const getGroupPageData = async (groupId: string) => {
     approvedPosts,
     approvedNextCursor: nextCursor,
     myPendingPosts,
+    members: allMembers,
   };
 };;;;
 

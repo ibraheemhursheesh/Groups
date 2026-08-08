@@ -45,9 +45,18 @@ export function PendingRequestsSection({
             key={req.id}
             className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3"
           >
-            <span className="text-sm font-medium">
-              {req.userName || req.userId}
-            </span>
+            <div className="flex items-center gap-2">
+              {req.userImage ? (
+                <img src={req.userImage} alt={req.userName || ""} className="h-6 w-6 rounded-full object-cover" />
+              ) : (
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
+                  {(req.userName || req.userId).charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span className="text-sm font-medium">
+                {req.userName || req.userId}
+              </span>
+            </div>
             <div className="flex gap-2">
               <Button variant="default" size="sm" onClick={() => handleApprove(req.id)} disabled={isPending}>
                 Approve
