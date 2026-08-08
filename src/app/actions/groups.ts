@@ -82,20 +82,21 @@ export const getApprovedPosts = async (
     conditions.push(lt(posts.createdAt, cursorDate));
   }
 
-  const result = await db
-    .select({
-      id: posts.id,
-      userId: posts.userId,
-      userName: user.name,
-      content: posts.content,
-      imageUrl: posts.imageUrl,
-      createdAt: posts.createdAt,
-    })
-    .from(posts)
-    .where(and(...conditions))
-    .leftJoin(user, eq(posts.userId, user.id))
-    .orderBy(desc(posts.createdAt))
-    .limit(limit + 1);
+    const result = await db
+      .select({
+        id: posts.id,
+        userId: posts.userId,
+        userName: user.name,
+        userImage: user.image,
+        content: posts.content,
+        imageUrl: posts.imageUrl,
+        createdAt: posts.createdAt,
+      })
+      .from(posts)
+      .where(and(...conditions))
+      .leftJoin(user, eq(posts.userId, user.id))
+      .orderBy(desc(posts.createdAt))
+      .limit(limit + 1);
 
   const hasMore = result.length > limit;
   const items = hasMore ? result.slice(0, limit) : result;
@@ -138,6 +139,13 @@ export const getGroupPageData = async (groupId: string) => {
     (m) => m.userId === session.user.id,
   );
 
+  // Fetch the current user's full profile (including Google photo URL)
+  const [currentUserProfile] = await db
+    .select({ image: user.image })
+    .from(user)
+    .where(eq(user.id, session.user.id));
+  const currentUserImage = currentUserProfile?.image ?? null;
+
   const [joinRequest] = currentMember
     ? []
     : await db
@@ -172,6 +180,7 @@ export const getGroupPageData = async (groupId: string) => {
             id: posts.id,
             userId: posts.userId,
             userName: user.name,
+            userImage: user.image,
             content: posts.content,
             imageUrl: posts.imageUrl,
             createdAt: posts.createdAt,
@@ -208,6 +217,7 @@ export const getGroupPageData = async (groupId: string) => {
   return {
     organization: orgResult || org,
     currentMember: currentMember || null,
+    currentUserImage,
     joinRequest: joinRequest || null,
     pendingRequests,
     pendingPosts,
@@ -215,7 +225,7 @@ export const getGroupPageData = async (groupId: string) => {
     approvedNextCursor: nextCursor,
     myPendingPosts,
   };
-};;
+};;;;
 
 export const requestToJoin = async (groupId: string) => {
   const session = await auth.api.getSession({

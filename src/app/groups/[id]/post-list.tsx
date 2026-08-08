@@ -7,6 +7,7 @@ type Post = {
   id: string;
   userId: string;
   userName: string | null;
+  userImage: string | null;
   content: string;
   imageUrl: string | null;
   createdAt: Date;
@@ -65,10 +66,23 @@ export function PostList({
         {posts.map((post) => (
           <li key={post.id} className="overflow-hidden rounded-xl border">
             <div className="flex items-center justify-between px-4 pt-4">
-              <span className="text-xs text-muted-foreground">
-                {post.userName || post.userId}{" "}
-                {new Date(post.createdAt).toLocaleDateString()}
-              </span>
+              <div className="flex items-center gap-2">
+                {post.userImage ? (
+                  <img
+                    src={post.userImage}
+                    alt={post.userName || ""}
+                    className="h-6 w-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
+                    {(post.userName || post.userId).charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {post.userName || post.userId}{" "}
+                  {new Date(post.createdAt).toLocaleDateString()}
+                </span>
+              </div>
               {(isAdmin || post.userId === currentUserId) && (
                 <Button
                   variant="ghost"

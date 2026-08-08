@@ -23,6 +23,7 @@ export default async function GroupPage({
   const {
     organization,
     currentMember,
+    currentUserImage,
     joinRequest,
     pendingRequests,
     pendingPosts,
@@ -74,6 +75,7 @@ export default async function GroupPage({
             isAdmin={currentMember.role === "admin"}
             currentUserId={currentMember.userId}
             currentUserName={(currentMember as any).user?.name || null}
+            currentUserImage={currentUserImage}
             initialApprovedPosts={approvedPosts as any[]}
             initialNextCursor={approvedNextCursor}
             initialPendingPosts={pendingPosts as any[]}

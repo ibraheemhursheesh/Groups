@@ -4,6 +4,7 @@ more post formats
 number of members in a group (500, 23K)
 cursor-based pagination for posts
 edit posts
+likes on posts
 
 
 fixes:

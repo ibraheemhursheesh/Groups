@@ -15,6 +15,7 @@ type Post = {
   id: string;
   userId: string;
   userName: string | null;
+  userImage: string | null;
   content: string;
   imageUrl: string | null;
   createdAt: Date;
@@ -32,6 +33,7 @@ export function PostsWrapper({
   isAdmin,
   currentUserId,
   currentUserName,
+  currentUserImage,
   initialApprovedPosts,
   initialNextCursor,
   initialPendingPosts,
@@ -41,6 +43,7 @@ export function PostsWrapper({
   isAdmin: boolean;
   currentUserId: string;
   currentUserName: string | null;
+  currentUserImage: string | null;
   initialApprovedPosts: Post[];
   initialNextCursor: string | null;
   initialPendingPosts: Post[];
@@ -66,6 +69,7 @@ export function PostsWrapper({
           id: `optimistic-${crypto.randomUUID()}`,
           userId: currentUserId,
           userName: currentUserName,
+          userImage: currentUserImage,
           content: (formData.get("content") as string)?.trim() || "",
           imageUrl: optimisticImageUrl,
           createdAt: new Date(),
