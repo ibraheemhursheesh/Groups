@@ -8,6 +8,7 @@ import {
   createPost,
   handlePostApproval,
   deletePost,
+  editPost,
   getApprovedPosts,
 } from "@/app/actions/groups";
 
@@ -110,6 +111,13 @@ export function PostsWrapper({
     await deletePost(postId, groupId);
   };
 
+  const handleEdit = async (postId: string, content: string) => {
+    setApprovedPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, content } : p)),
+    );
+    await editPost(postId, groupId, content);
+  };
+
   const handleLoadMore = () => {
     if (!cursor) return;
     startLoadMore(async () => {
@@ -162,6 +170,7 @@ export function PostsWrapper({
         currentUserId={currentUserId}
         isAdmin={isAdmin}
         onDelete={handleDelete}
+        onEdit={handleEdit}
         hasMore={cursor !== null}
         loadingMore={loadingMore}
         onLoadMore={handleLoadMore}

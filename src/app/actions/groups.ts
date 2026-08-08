@@ -477,3 +477,35 @@ export const kickMember = async (memberId: string, groupId: string) => {
     },
   });
 };
+
+export const editPost = async (postId: string, groupId: string, content: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    throw new Error("Not authenticated");
+  }
+
+  const [post] = await db
+    .select()
+    .from(posts)
+    .where(and(eq(posts.id, postId), eq(posts.groupId, groupId)));
+
+  if (!post) {
+    throw new Error("Post not found");
+  }
+
+  if (post.userId !== session.user.id) {
+    throw new Error("You can only edit your own posts");
+  }
+
+  if (!content || content.trim().length === 0) {
+    throw new Error("Post content is required");
+  }
+
+  await db
+    .update(posts)
+    .set({ content: content.trim() })
+    .where(eq(posts.id, postId));
+};
