@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { handleJoinRequest } from "@/app/actions/groups";
+import { useTransition } from "react";
 
 type PendingRequest = {
   id: string;
@@ -13,33 +12,35 @@ type PendingRequest = {
 };
 
 export function PendingRequestsSection({
-  groupId,
   requests,
+  onApprove,
+  onReject,
 }: {
-  groupId: string;
   requests: PendingRequest[];
+  onApprove: (requestId: string) => Promise<void>;
+  onReject: (requestId: string) => Promise<void>;
 }) {
-  const [optimisticRequests, setRequests] = useState(requests);
+  const [isPending, startTransition] = useTransition();
 
-  if (optimisticRequests.length === 0) return null;
-
-  const approve = async (requestId: string) => {
-    setRequests((prev) => prev.filter((r) => r.id !== requestId));
-    await handleJoinRequest(requestId, groupId, "approve");
+  const handleApprove = (requestId: string) => {
+    startTransition(() => {
+      onApprove(requestId);
+    });
   };
 
-  const reject = async (requestId: string) => {
-    setRequests((prev) => prev.filter((r) => r.id !== requestId));
-    await handleJoinRequest(requestId, groupId, "reject");
+  const handleReject = (requestId: string) => {
+    startTransition(() => {
+      onReject(requestId);
+    });
   };
 
   return (
-    <div className="mb-6 rounded-xl border p-4">
+    <div className="rounded-xl border p-4">
       <h3 className="mb-3 font-semibold">
-        Pending join requests ({optimisticRequests.length})
+        Pending join requests ({requests.length})
       </h3>
       <ul className="space-y-3">
-        {optimisticRequests.map((req) => (
+        {requests.map((req) => (
           <li
             key={req.id}
             className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3"
@@ -48,10 +49,10 @@ export function PendingRequestsSection({
               {req.userName || req.userId}
             </span>
             <div className="flex gap-2">
-              <Button variant="default" size="sm" onClick={() => approve(req.id)}>
+              <Button variant="default" size="sm" onClick={() => handleApprove(req.id)} disabled={isPending}>
                 Approve
               </Button>
-              <Button variant="outline" size="sm" onClick={() => reject(req.id)}>
+              <Button variant="outline" size="sm" onClick={() => handleReject(req.id)} disabled={isPending}>
                 Reject
               </Button>
             </div>

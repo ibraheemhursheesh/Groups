@@ -1,6 +1,5 @@
 import { getGroupPageData } from "@/app/actions/groups";
 import { JoinButton } from "./join-button";
-import { PendingRequestsSection } from "./pending-requests-section";
 import { PostsWrapper } from "./posts-wrapper";
 import { GroupActions } from "./leave-button";
 
@@ -63,13 +62,6 @@ export default async function GroupPage({
 
       {currentMember && (
         <>
-          {currentMember.role === "admin" && (
-            <PendingRequestsSection
-              groupId={id}
-              requests={pendingRequests as any[]}
-            />
-          )}
-
           <PostsWrapper
             groupId={id}
             isAdmin={currentMember.role === "admin"}
@@ -80,6 +72,7 @@ export default async function GroupPage({
             initialNextCursor={approvedNextCursor}
             initialPendingPosts={pendingPosts as any[]}
             initialMyPendingPosts={myPendingPosts as any[]}
+            initialPendingRequests={pendingRequests as any[]}
           />
 
           <GroupActions groupId={id} isAdmin={currentMember.role === "admin"} />

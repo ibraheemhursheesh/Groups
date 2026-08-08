@@ -3,13 +3,16 @@
 import { useState, useTransition } from "react";
 import { PostForm } from "./post-form";
 import { PendingPostsSection } from "./pending-posts-section";
+import { PendingRequestsSection } from "./pending-requests-section";
 import { PostList } from "./post-list";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   createPost,
   handlePostApproval,
   deletePost,
   editPost,
   getApprovedPosts,
+  handleJoinRequest,
 } from "@/app/actions/groups";
 
 type Post = {
@@ -29,6 +32,14 @@ type MyPendingPost = {
   createdAt: Date;
 };
 
+type PendingRequest = {
+  id: string;
+  userId: string;
+  userName: string | null;
+  userImage: string | null;
+  createdAt: Date;
+};
+
 export function PostsWrapper({
   groupId,
   isAdmin,
@@ -39,6 +50,7 @@ export function PostsWrapper({
   initialNextCursor,
   initialPendingPosts,
   initialMyPendingPosts,
+  initialPendingRequests,
 }: {
   groupId: string;
   isAdmin: boolean;
@@ -49,10 +61,12 @@ export function PostsWrapper({
   initialNextCursor: string | null;
   initialPendingPosts: Post[];
   initialMyPendingPosts: MyPendingPost[];
+  initialPendingRequests: PendingRequest[];
 }) {
   const [approvedPosts, setApprovedPosts] = useState(initialApprovedPosts);
   const [pendingPosts, setPendingPosts] = useState(initialPendingPosts);
   const [myPendingPosts, setMyPendingPosts] = useState(initialMyPendingPosts);
+  const [pendingRequests, setPendingRequests] = useState(initialPendingRequests);
   const [cursor, setCursor] = useState<string | null>(initialNextCursor);
   const [loadingMore, startLoadMore] = useTransition();
 
@@ -118,6 +132,16 @@ export function PostsWrapper({
     await editPost(postId, groupId, content);
   };
 
+  const handleApproveRequest = async (requestId: string) => {
+    setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
+    await handleJoinRequest(requestId, groupId, "approve");
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
+    await handleJoinRequest(requestId, groupId, "reject");
+  };
+
   const handleLoadMore = () => {
     if (!cursor) return;
     startLoadMore(async () => {
@@ -135,12 +159,37 @@ export function PostsWrapper({
         onOptimisticSubmit={handlePostSubmit}
       />
 
-      {isAdmin && pendingPosts.length > 0 && (
-        <PendingPostsSection
-          posts={pendingPosts}
-          onApprove={handleApprove}
-          onReject={handleReject}
-        />
+      {isAdmin && (pendingRequests.length > 0 || pendingPosts.length > 0) && (
+        <div className="mb-6">
+          <Tabs defaultValue={pendingRequests.length > 0 ? "requests" : "posts"}>
+            <TabsList>
+              <TabsTrigger value="requests">
+                Join requests ({pendingRequests.length})
+              </TabsTrigger>
+              <TabsTrigger value="posts">
+                Pending posts ({pendingPosts.length})
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="requests">
+              {pendingRequests.length > 0 && (
+                <PendingRequestsSection
+                  requests={pendingRequests}
+                  onApprove={handleApproveRequest}
+                  onReject={handleRejectRequest}
+                />
+              )}
+            </TabsContent>
+            <TabsContent value="posts">
+              {pendingPosts.length > 0 && (
+                <PendingPostsSection
+                  posts={pendingPosts}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
       )}
 
       {!isAdmin && myPendingPosts.length > 0 && (
