@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useTransition } from "react";
+import { PostImages } from "./post-images";
 
 type PendingPost = {
   id: string;
@@ -9,7 +10,7 @@ type PendingPost = {
   userName: string | null;
   userImage: string | null;
   content: string;
-  imageUrl: string | null;
+  images: string[];
   createdAt: Date;
 };
 
@@ -81,13 +82,7 @@ export function PendingPostsSection({
             <p className="px-4 pb-4 pt-2 text-sm whitespace-pre-wrap">
               {post.content}
             </p>
-            {post.imageUrl && (
-              <img
-                src={post.imageUrl}
-                alt="Post image"
-                className="w-full object-cover"
-              />
-            )}
+            <PostImages images={post.images} />
           </li>
         ))}
       </ul>

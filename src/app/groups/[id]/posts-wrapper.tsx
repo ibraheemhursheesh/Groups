@@ -5,6 +5,7 @@ import { PostForm } from "./post-form";
 import { PendingPostsSection } from "./pending-posts-section";
 import { PendingRequestsSection } from "./pending-requests-section";
 import { PostList } from "./post-list";
+import { PostImages } from "./post-images";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   createPost,
@@ -21,14 +22,14 @@ type Post = {
   userName: string | null;
   userImage: string | null;
   content: string;
-  imageUrl: string | null;
+  images: string[];
   createdAt: Date;
 };
 
 type MyPendingPost = {
   id: string;
   content: string;
-  imageUrl: string | null;
+  images: string[];
   createdAt: Date;
 };
 
@@ -73,10 +74,10 @@ export function PostsWrapper({
   const handlePostSubmit = async (formData: FormData) => {
     formData.set("groupId", groupId);
 
-    // Generate a local object URL for the image so the optimistic post immediately shows it
-    const imageFile = formData.get("image") as File | null;
-    const optimisticImageUrl =
-      imageFile && imageFile.size > 0 ? URL.createObjectURL(imageFile) : null;
+    const imageFiles = formData.getAll("images") as File[];
+    const optimisticImageUrls = imageFiles
+      .filter((f) => f.size > 0)
+      .map((f) => URL.createObjectURL(f));
 
     if (isAdmin) {
       setApprovedPosts((prev) => [
@@ -86,7 +87,7 @@ export function PostsWrapper({
           userName: currentUserName,
           userImage: currentUserImage,
           content: (formData.get("content") as string)?.trim() || "",
-          imageUrl: optimisticImageUrl,
+          images: optimisticImageUrls,
           createdAt: new Date(),
         },
         ...prev,
@@ -96,7 +97,7 @@ export function PostsWrapper({
         {
           id: `optimistic-${crypto.randomUUID()}`,
           content: (formData.get("content") as string)?.trim() || "",
-          imageUrl: optimisticImageUrl,
+          images: optimisticImageUrls,
           createdAt: new Date(),
         },
         ...prev,
@@ -201,13 +202,7 @@ export function PostsWrapper({
             {myPendingPosts.map((post) => (
               <li key={post.id} className="rounded-lg bg-muted/50 p-4">
                 <p className="text-sm">{post.content}</p>
-                {post.imageUrl && (
-                  <img
-                    src={post.imageUrl}
-                    alt="Pending post"
-                    className="mt-2 w-full rounded-lg object-cover"
-                  />
-                )}
+                <PostImages images={post.images} />
               </li>
             ))}
           </ul>

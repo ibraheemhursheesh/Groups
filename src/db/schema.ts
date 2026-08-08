@@ -9,7 +9,7 @@ export const posts = pgTable("posts", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   content: t.text("content").notNull(),
-  imageUrl: t.text("image_url"),
+  images: t.text("images"),
   status: t.text("status").notNull(),
   createdAt: t
     .timestamp("created_at", { precision: 6, withTimezone: true })
@@ -86,6 +86,7 @@ export const user = pgTable("user", {
   email: t.varchar("email", { length: 255 }).notNull().unique(),
   emailVerified: t.boolean("email_verified").notNull(),
   image: t.text("image"),
+  isAnonymous: t.boolean("is_anonymous"),
   createdAt: t
     .timestamp("created_at", { precision: 6, withTimezone: true })
     .notNull(),

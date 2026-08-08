@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/index";
 import { nextCookies } from "better-auth/next-js";
-import { organization as orgPlugin } from "better-auth/plugins";
+import { organization as orgPlugin, anonymous } from "better-auth/plugins";
 import { createAccessControl } from "better-auth/plugins/access";
 import { user, session, account, verification, organization, member as memberTable, invitation } from "@/db/schema";
 
@@ -45,6 +45,7 @@ export const auth = betterAuth({
       creatorRole: "admin",
       sendInvitationEmail: async () => {},
     }),
+    anonymous(),
     nextCookies(),
   ],
 });

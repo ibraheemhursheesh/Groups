@@ -89,7 +89,7 @@ export const getApprovedPosts = async (
         userName: user.name,
         userImage: user.image,
         content: posts.content,
-        imageUrl: posts.imageUrl,
+        images: posts.images,
         createdAt: posts.createdAt,
       })
       .from(posts)
@@ -100,11 +100,25 @@ export const getApprovedPosts = async (
 
   const hasMore = result.length > limit;
   const items = hasMore ? result.slice(0, limit) : result;
+  const posts_list = (items as any[]).map((p) => ({
+    ...p,
+    images: parseImages(p.images),
+  }));
   const nextCursor = hasMore
     ? (items[items.length - 1].createdAt?.toISOString() ?? null)
     : null;
 
-  return { posts: items, nextCursor };
+  return { posts: posts_list, nextCursor };
+};
+
+const parseImages = (images: unknown): string[] => {
+  if (!images) return [];
+  if (Array.isArray(images)) return images;
+  try {
+    return JSON.parse(images as string);
+  } catch {
+    return [];
+  }
 };
 
 export const getGroupPageData = async (groupId: string) => {
@@ -182,7 +196,7 @@ export const getGroupPageData = async (groupId: string) => {
             userName: user.name,
             userImage: user.image,
             content: posts.content,
-            imageUrl: posts.imageUrl,
+            images: posts.images,
             createdAt: posts.createdAt,
           })
           .from(posts)
@@ -200,7 +214,7 @@ export const getGroupPageData = async (groupId: string) => {
         .select({
           id: posts.id,
           content: posts.content,
-          imageUrl: posts.imageUrl,
+          images: posts.images,
           createdAt: posts.createdAt,
         })
         .from(posts)
@@ -228,10 +242,10 @@ export const getGroupPageData = async (groupId: string) => {
     currentUserImage,
     joinRequest: joinRequest || null,
     pendingRequests,
-    pendingPosts,
+    pendingPosts: (pendingPosts as any[]).map((p) => ({ ...p, images: parseImages(p.images) })),
     approvedPosts,
     approvedNextCursor: nextCursor,
-    myPendingPosts,
+    myPendingPosts: (myPendingPosts as any[]).map((p) => ({ ...p, images: parseImages(p.images) })),
     members: allMembers,
   };
 };;;;
@@ -377,7 +391,7 @@ export const createPost = async (formData: FormData) => {
 
   const groupId = formData.get("groupId") as string;
   const content = formData.get("content") as string;
-  const imageFile = formData.get("image") as File | null;
+  const imageFiles = formData.getAll("images") as File[];
 
   if (!content || content.trim().length === 0) {
     throw new Error("Post content is required");
@@ -399,20 +413,25 @@ export const createPost = async (formData: FormData) => {
   const isAdmin = currentMember.role === "admin";
 
   const postId = crypto.randomUUID();
-  let imageUrl: string | null = null;
+  const imageUrls: string[] = [];
 
-  if (imageFile && imageFile.size > 0) {
-    const ext = imageFile.name.split(".").pop() || "png";
-    const path = `${groupId}/posts/${postId}.${ext}`;
-    const uploadResult = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(path, imageFile, {
-        contentType: imageFile.type,
-        upsert: false,
-      });
-    if (!uploadResult.error) {
-      const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
-      imageUrl = data.publicUrl;
+  for (let i = 0; i < imageFiles.length; i++) {
+    const file = imageFiles[i];
+    if (file && file.size > 0) {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${groupId}/posts/${postId}_${i}.${ext}`;
+      const uploadResult = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(path, file, {
+          contentType: file.type,
+          upsert: false,
+        });
+      if (!uploadResult.error) {
+        const { data } = supabase.storage
+          .from(STORAGE_BUCKET)
+          .getPublicUrl(path);
+        imageUrls.push(data.publicUrl);
+      }
     }
   }
 
@@ -421,7 +440,7 @@ export const createPost = async (formData: FormData) => {
     groupId,
     userId: session.user.id,
     content: content.trim(),
-    imageUrl,
+    images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
     status: isAdmin ? "approved" : "pending",
     createdAt: new Date(),
   });

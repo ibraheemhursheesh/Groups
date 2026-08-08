@@ -3,6 +3,7 @@ import { signIn, signOut } from "@/app/actions/authen";
 import { auth } from "@/app/lib/auth";
 import { headers } from "next/headers";
 import { CreateGroupDialog } from "@/components/create-group-dialog";
+import { GuestSignInButton } from "@/components/guest-sign-in-button";
 import { listAllGroups } from "@/app/actions/groups";
 import Link from "next/link";
 
@@ -64,6 +65,17 @@ export default async function Home() {
               Continue with Google
             </button>
           </form>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-slate-200" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-white px-2 text-slate-400">or</span>
+            </div>
+          </div>
+
+          <GuestSignInButton />
 
           <p className="mt-8 text-center text-xs leading-5 text-slate-400">
             By continuing, you agree to the Groupss terms and privacy policy.

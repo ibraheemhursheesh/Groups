@@ -5,51 +5,49 @@ import { Textarea } from "@/components/ui/textarea";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { ImageIcon } from "lucide-react";
 
+const MAX_IMAGES = 10;
+
 interface PostFormProps {
   groupId: string;
   isAdmin: boolean;
   onOptimisticSubmit: (formData: FormData) => Promise<void>;
 }
 
-export function PostForm({
-  groupId,
-  isAdmin,
-  onOptimisticSubmit,
-}: PostFormProps) {
+export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const objectUrlRef = useRef<string | null>(null);
+  const objectUrlsRef = useRef<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [previews, setPreviews] = useState<string[]>([]);
 
-  const clearPreview = useCallback(() => {
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-      objectUrlRef.current = null;
-    }
-    setPreview(null);
+  const clearPreviews = useCallback(() => {
+    objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    objectUrlsRef.current = [];
+    setPreviews([]);
     if (fileRef.current) fileRef.current.value = "";
   }, []);
 
   useEffect(() => {
     return () => {
-      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     };
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-      objectUrlRef.current = null;
-    }
-    if (file) {
-      const url = URL.createObjectURL(file);
-      objectUrlRef.current = url;
-      setPreview(url);
-    } else {
-      setPreview(null);
-    }
+    const files = Array.from(e.target.files || []);
+    const newCount = previews.length + files.length;
+    if (newCount > MAX_IMAGES) return;
+
+    const newUrls = files.map((f) => URL.createObjectURL(f));
+    objectUrlsRef.current = [...objectUrlsRef.current, ...newUrls];
+    setPreviews((prev) => [...prev, ...newUrls]);
+  };
+
+  const removePreview = (index: number) => {
+    URL.revokeObjectURL(objectUrlsRef.current[index]);
+    objectUrlsRef.current = objectUrlsRef.current.filter((_, i) => i !== index);
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -59,7 +57,7 @@ export function PostForm({
     formData.set("groupId", groupId);
     await onOptimisticSubmit(formData);
     formRef.current?.reset();
-    clearPreview();
+    clearPreviews();
     setLoading(false);
   };
 
@@ -74,40 +72,46 @@ export function PostForm({
         disabled={loading}
         className="mb-3"
       />
-      {preview ? (
-        <div className="relative mb-3 overflow-hidden rounded-lg border">
-          <img
-            src={preview}
-            alt="Preview"
-            className="aspect-video w-full object-cover"
-          />
-          <button
-            type="button"
-            onClick={clearPreview}
-            className="absolute right-2 top-2 rounded-md bg-black/50 px-2 py-1 text-xs text-white hover:bg-black/70"
-          >
-            Remove
-          </button>
+
+      {previews.length > 0 && (
+        <div className="mb-3 grid grid-cols-4 gap-1">
+          {previews.map((src, i) => (
+            <div key={i} className="relative overflow-hidden rounded-lg border">
+              <img src={src} alt="" className="aspect-square w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => removePreview(i)}
+                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-[10px] text-white hover:bg-black/70"
+              >
+                X
+              </button>
+            </div>
+          ))}
         </div>
-      ) : (
+      )}
+
+      {previews.length < MAX_IMAGES && (
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
           className="mb-3 inline-flex items-center gap-1.5 rounded-lg border border-dashed px-3 py-1.5 text-xs text-muted-foreground transition hover:border-indigo-300 hover:text-indigo-600"
         >
           <ImageIcon className="size-3.5" />
-          Add image
+          Add images ({previews.length}/{MAX_IMAGES})
         </button>
       )}
+
       <input
         ref={fileRef}
-        name="image"
+        name="images"
         type="file"
         accept="image/*"
+        multiple
         onChange={handleFileChange}
         disabled={loading}
         className="hidden"
       />
+
       <Button type="submit" disabled={loading}>
         {loading ? "Posting..." : "Post"}
       </Button>
