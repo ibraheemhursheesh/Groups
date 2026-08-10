@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/index";
 import { nextCookies } from "better-auth/next-js";
-import { organization as orgPlugin, anonymous } from "better-auth/plugins";
+import { organization as orgPlugin, anonymous, multiSession } from "better-auth/plugins";
 import { createAccessControl } from "better-auth/plugins/access";
 import { user, session, account, verification, organization, member as memberTable, invitation } from "@/db/schema";
 
@@ -30,6 +30,10 @@ export const auth = betterAuth({
     schema: { user, session, account, verification, organization, member: memberTable, invitation },
   }),
   baseURL: process.env.BETTER_AUTH_URL,
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: false,
+  },
   socialProviders: {
     google: {
       prompt: "select_account",
@@ -46,6 +50,7 @@ export const auth = betterAuth({
       sendInvitationEmail: async () => {},
     }),
     anonymous(),
+    multiSession(),
     nextCookies(),
   ],
 });

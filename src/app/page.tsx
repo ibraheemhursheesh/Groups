@@ -4,6 +4,7 @@ import { auth } from "@/app/lib/auth";
 import { headers } from "next/headers";
 import { CreateGroupDialog } from "@/components/create-group-dialog";
 import { GuestSignInButton } from "@/components/guest-sign-in-button";
+import { EmailSignInForm } from "@/components/email-sign-in-form";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { listAllGroups } from "@/app/actions/groups";
 import Link from "next/link";
@@ -31,12 +32,17 @@ function GoogleMark() {
   );
 }
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ "add-account"?: string }>;
+}) {
+  const { "add-account": addAccount } = (await searchParams) || {};
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  if (!session) {
+  if (!session || addAccount !== undefined) {
     return (
       <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 py-12">
         <div className="absolute right-4 top-4 z-10">
@@ -80,6 +86,17 @@ export default async function Home() {
           </div>
 
           <GuestSignInButton />
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-card px-2 text-muted-foreground">or</span>
+            </div>
+          </div>
+
+          <EmailSignInForm />
 
           <p className="mt-8 text-center text-xs leading-5 text-muted-foreground">
             By continuing, you agree to the Groupss terms and privacy policy.
