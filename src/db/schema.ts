@@ -14,6 +14,7 @@ export const posts = pgTable("posts", {
   createdAt: t
     .timestamp("created_at", { precision: 6, withTimezone: true })
     .notNull(),
+  approvedAt: t.timestamp("approved_at", { precision: 6, withTimezone: true }),
 });
 
 export const joinRequests = pgTable("join_requests", {

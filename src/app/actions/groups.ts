@@ -79,7 +79,7 @@ export const getApprovedPosts = async (
   const conditions = [eq(posts.groupId, groupId), eq(posts.status, "approved")];
   if (cursor) {
     const cursorDate = new Date(cursor);
-    conditions.push(lt(posts.createdAt, cursorDate));
+    conditions.push(lt(posts.approvedAt, cursorDate));
   }
 
     const result = await db
@@ -91,11 +91,12 @@ export const getApprovedPosts = async (
         content: posts.content,
         images: posts.images,
         createdAt: posts.createdAt,
+        approvedAt: posts.approvedAt,
       })
       .from(posts)
       .where(and(...conditions))
       .leftJoin(user, eq(posts.userId, user.id))
-      .orderBy(desc(posts.createdAt))
+      .orderBy(desc(posts.approvedAt))
       .limit(limit + 1);
 
   const hasMore = result.length > limit;
@@ -105,7 +106,7 @@ export const getApprovedPosts = async (
     images: parseImages(p.images),
   }));
   const nextCursor = hasMore
-    ? (items[items.length - 1].createdAt?.toISOString() ?? null)
+    ? (items[items.length - 1].approvedAt?.toISOString() ?? null)
     : null;
 
   return { posts: posts_list, nextCursor };
@@ -443,6 +444,7 @@ export const createPost = async (formData: FormData) => {
     images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
     status: isAdmin ? "approved" : "pending",
     createdAt: new Date(),
+    approvedAt: isAdmin ? new Date() : null,
   });
 }
 
@@ -467,7 +469,7 @@ export const handlePostApproval = async (postId: string, groupId: string, action
   if (action === "approve") {
     await db
       .update(posts)
-      .set({ status: "approved" })
+      .set({ status: "approved", approvedAt: new Date() })
       .where(eq(posts.id, postId));
   } else {
     await db.delete(posts).where(eq(posts.id, postId));

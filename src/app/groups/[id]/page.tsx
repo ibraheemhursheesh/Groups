@@ -3,6 +3,7 @@ import { JoinButton } from "./join-button";
 import { PostsWrapper } from "./posts-wrapper";
 import { GroupActions } from "./leave-button";
 import { MembersList } from "./members-list";
+import Image from "next/image";
 
 export default async function GroupPage({
   params,
@@ -41,10 +42,12 @@ export default async function GroupPage({
     <main className="mx-auto max-w-3xl px-4 py-12">
       <div className="mb-8">
         {org.logo && (
-          <img
+          <Image
             src={org.logo}
             alt={`${org.name} cover`}
             className="mb-6 aspect-video w-full rounded-xl border object-cover"
+            width={700}
+            height={400}
           />
         )}
         <h1 className="text-2xl font-bold tracking-tight">{org.name}</h1>
