@@ -506,7 +506,7 @@ export const kickMember = async (memberId: string, groupId: string) => {
   });
 };
 
-export const editPost = async (postId: string, groupId: string, content: string) => {
+export const editPost = async (formData: FormData) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -514,6 +514,13 @@ export const editPost = async (postId: string, groupId: string, content: string)
   if (!session) {
     throw new Error("Not authenticated");
   }
+
+  const postId = formData.get("postId") as string;
+  const groupId = formData.get("groupId") as string;
+  const content = formData.get("content") as string;
+  const existingUrlsJson = formData.get("existingUrls") as string;
+  const existingUrls: string[] = existingUrlsJson ? JSON.parse(existingUrlsJson) : [];
+  const newFiles = formData.getAll("newFiles") as File[];
 
   const [post] = await db
     .select()
@@ -532,8 +539,31 @@ export const editPost = async (postId: string, groupId: string, content: string)
     throw new Error("Post content is required");
   }
 
+  const imageUrls: string[] = [...existingUrls];
+
+  for (const file of newFiles) {
+    if (file && file.size > 0) {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${groupId}/posts/${postId}_edit_${crypto.randomUUID()}.${ext}`;
+      const uploadResult = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(path, file, {
+          contentType: file.type,
+          upsert: false,
+        });
+      if (!uploadResult.error) {
+        const { data } = supabase.storage
+          .from(STORAGE_BUCKET)
+          .getPublicUrl(path);
+        imageUrls.push(data.publicUrl);
+      }
+    }
+  }
+
   await db
     .update(posts)
-    .set({ content: content.trim() })
+    .set({ content: content.trim(), images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null })
     .where(eq(posts.id, postId));
+
+  return imageUrls;
 };

@@ -37,7 +37,7 @@ export function JoinButton({
 
   if (optimisticView === "pending") {
     return (
-      <p className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+      <p className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-600 dark:text-yellow-400">
         {isPending
           ? "Sending your join request..."
           : "Your join request is pending admin approval."}

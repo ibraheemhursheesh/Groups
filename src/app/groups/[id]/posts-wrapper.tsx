@@ -126,11 +126,36 @@ export function PostsWrapper({
     await deletePost(postId, groupId);
   };
 
-  const handleEdit = async (postId: string, content: string) => {
+  const handleEdit = async (
+    postId: string,
+    groupId: string,
+    content: string,
+    existingUrls: string[],
+    newFiles: File[],
+  ) => {
+    const optimisticImages = [
+      ...existingUrls,
+      ...newFiles.filter((f) => f.size > 0).map((f) => URL.createObjectURL(f)),
+    ];
     setApprovedPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, content } : p)),
+      prev.map((p) =>
+        p.id === postId ? { ...p, content, images: optimisticImages } : p,
+      ),
     );
-    await editPost(postId, groupId, content);
+    const formData = new FormData();
+    formData.set("postId", postId);
+    formData.set("groupId", groupId);
+    formData.set("content", content);
+    formData.set("existingUrls", JSON.stringify(existingUrls));
+    for (const file of newFiles) {
+      if (file.size > 0) formData.append("newFiles", file);
+    }
+    const finalImages = await editPost(formData);
+    setApprovedPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId ? { ...p, content, images: finalImages } : p,
+      ),
+    );
   };
 
   const handleApproveRequest = async (requestId: string) => {
@@ -213,6 +238,7 @@ export function PostsWrapper({
         posts={approvedPosts}
         currentUserId={currentUserId}
         isAdmin={isAdmin}
+        groupId={groupId}
         onDelete={handleDelete}
         onEdit={handleEdit}
         hasMore={cursor !== null}

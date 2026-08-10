@@ -120,7 +120,7 @@ export function CreateGroupDialog() {
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm text-muted-foreground transition hover:border-indigo-300 hover:text-indigo-600"
+                className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm text-muted-foreground transition hover:border-primary/40 hover:text-primary"
               >
                 <ImageIcon className="size-6" />
                 Click to upload a cover image

@@ -7,6 +7,7 @@ edit posts
 likes on posts
 hash cursor id
 upload image to storage ahead of time.
+reduce images size on the backend
 
 fixes:
 * use supabase ssr package

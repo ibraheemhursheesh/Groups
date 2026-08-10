@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import {
   Dialog,
@@ -35,19 +36,37 @@ export function PostImages({ images }: { images: string[] }) {
     <>
       <div
         className="grid gap-0.5 w-full"
-        style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, auto)` }}
+        style={{
+          gridTemplateColumns: `repeat(${cols}, 1fr)`,
+          gridTemplateRows: `repeat(${rows}, auto)`,
+        }}
       >
         {display.map((src, i) => (
-          <div key={i} className="relative cursor-pointer" onClick={() => openCarousel(i)}>
-            <img
+          <div
+            key={i}
+            className="relative cursor-pointer"
+            style={{
+              aspectRatio: cols === 1 ? "16 / 9" : "1 / 1",
+              maxHeight: rows === 1 ? "400px" : undefined,
+            }}
+            onClick={() => openCarousel(i)}
+          >
+            <Image
               src={src}
               alt=""
-              className="w-full object-cover"
-              style={{ aspectRatio: cols === 1 ? "16/9" : "1/1", maxHeight: rows === 1 ? "400px" : "none" }}
+              fill
+              className="object-cover"
+              sizes={
+                cols === 1
+                  ? "(max-width: 768px) 100vw, 700px"
+                  : "(max-width: 768px) 50vw, 350px"
+              }
             />
             {i === 3 && remaining > 0 && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                <span className="text-lg font-bold text-white">+{remaining}</span>
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+                <span className="text-lg font-bold text-white">
+                  +{remaining}
+                </span>
               </div>
             )}
           </div>
@@ -55,7 +74,12 @@ export function PostImages({ images }: { images: string[] }) {
       </div>
 
       {carouselIndex !== null && (
-        <Dialog open onOpenChange={(v) => { if (!v) close(); }}>
+        <Dialog
+          open
+          onOpenChange={(v) => {
+            if (!v) close();
+          }}
+        >
           <DialogPortal>
             <DialogOverlay className="bg-black/80" />
             <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -64,7 +88,20 @@ export function PostImages({ images }: { images: string[] }) {
                 className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
               >
                 <span className="sr-only">Close</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
               </button>
 
               <div className="flex items-center gap-4">
@@ -76,11 +113,18 @@ export function PostImages({ images }: { images: string[] }) {
                   <ChevronLeft className="size-6" />
                 </button>
 
-                <img
-                  src={images[carouselIndex]}
-                  alt=""
-                  className="max-h-[85vh] max-w-[85vw] rounded-lg object-contain"
-                />
+                <div
+                  className="relative"
+                  style={{ width: "85vw", maxWidth: "1200px", height: "85vh" }}
+                >
+                  <Image
+                    src={images[carouselIndex]}
+                    alt=""
+                    fill
+                    className="rounded-lg object-contain"
+                    sizes="85vw"
+                  />
+                </div>
 
                 <button
                   onClick={next}

@@ -4,6 +4,7 @@ import { auth } from "@/app/lib/auth";
 import { headers } from "next/headers";
 import { CreateGroupDialog } from "@/components/create-group-dialog";
 import { GuestSignInButton } from "@/components/guest-sign-in-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { listAllGroups } from "@/app/actions/groups";
 import Link from "next/link";
 
@@ -37,29 +38,32 @@ export default async function Home() {
 
   if (!session) {
     return (
-      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f8fc] px-6 py-12 text-slate-950">
-        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-indigo-200/40 blur-3xl" />
-        <div className="absolute -bottom-40 -right-24 h-[28rem] w-[28rem] rounded-full bg-violet-200/40 blur-3xl" />
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 py-12">
+        <div className="absolute right-4 top-4 z-10">
+          <ThemeToggle />
+        </div>
+        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/15 blur-3xl" />
+        <div className="absolute -bottom-40 -right-24 h-[28rem] w-[28rem] rounded-full bg-primary/10 blur-3xl" />
 
-        <section className="relative w-full max-w-md rounded-3xl border border-white/80 bg-white/90 p-8 shadow-[0_24px_80px_-30px_rgba(49,46,129,0.45)] backdrop-blur sm:p-10">
+        <section className="relative w-full max-w-md rounded-3xl border bg-card p-8 shadow-[0_24px_80px_-30px_rgba(0,0,0,0.2)] sm:p-10">
           <div className="mb-10 text-center">
-            <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-xl font-bold text-white shadow-lg shadow-indigo-600/25">
+            <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground shadow-lg shadow-primary/25">
               G
             </div>
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary">
               Welcome back
             </p>
-            <h1 className="text-3xl font-semibold tracking-tight">
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
               Sign in to Groupss
             </h1>
-            <p className="mt-3 text-sm leading-6 text-slate-500">
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
               Connect with your team and keep every conversation in one place.
             </p>
           </div>
           <form action={signIn}>
             <button
               type="submit"
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-indigo-100 disabled:cursor-wait disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-3 rounded-xl border bg-card px-4 py-3.5 text-sm font-semibold text-foreground shadow-sm transition hover:bg-muted focus:outline-none focus:ring-4 focus:ring-primary/20 disabled:cursor-wait disabled:opacity-60"
             >
               <GoogleMark />
               Continue with Google
@@ -68,16 +72,16 @@ export default async function Home() {
 
           <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-slate-200" />
+              <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-2 text-slate-400">or</span>
+              <span className="bg-card px-2 text-muted-foreground">or</span>
             </div>
           </div>
 
           <GuestSignInButton />
 
-          <p className="mt-8 text-center text-xs leading-5 text-slate-400">
+          <p className="mt-8 text-center text-xs leading-5 text-muted-foreground">
             By continuing, you agree to the Groupss terms and privacy policy.
           </p>
         </section>
@@ -101,6 +105,7 @@ async function Dashboard({ session }: { session: any }) {
           Welcome, {session.user.name}
         </h1>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <CreateGroupDialog />
           <form action={signOut}>
             <button className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600">
@@ -127,7 +132,7 @@ async function Dashboard({ session }: { session: any }) {
               <li key={org.id}>
                 <Link
                   href={`/groups/${org.id}`}
-                  className="block overflow-hidden rounded-xl border transition hover:border-indigo-200 hover:bg-indigo-50/50"
+                  className="block overflow-hidden rounded-xl border transition hover:border-primary/30 hover:bg-primary/5"
                 >
                   {org.logo && (
                     <img

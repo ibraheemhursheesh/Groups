@@ -94,7 +94,7 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="mb-3 inline-flex items-center gap-1.5 rounded-lg border border-dashed px-3 py-1.5 text-xs text-muted-foreground transition hover:border-indigo-300 hover:text-indigo-600"
+          className="mb-3 inline-flex items-center gap-1.5 rounded-lg border border-dashed px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary/40 hover:text-primary"
         >
           <ImageIcon className="size-3.5" />
           Add images ({previews.length}/{MAX_IMAGES})

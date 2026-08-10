@@ -1,9 +1,7 @@
-//  @ts-nocheck
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
 import { PostImages } from "./post-images";
+import { EditPostDialog } from "./edit-post-dialog";
 
 const TRUNCATE_LENGTH = 300;
 
@@ -29,6 +28,7 @@ export function PostList({
   posts,
   currentUserId,
   isAdmin,
+  groupId,
   onDelete,
   onEdit,
   hasMore,
@@ -38,16 +38,16 @@ export function PostList({
   posts: Post[];
   currentUserId: string;
   isAdmin: boolean;
+  groupId: string;
   onDelete: (postId: string) => void;
-  onEdit: (postId: string, content: string) => void;
+  onEdit: (postId: string, groupId: string, content: string, existingUrls: string[], newFiles: File[]) => Promise<void>;
   hasMore?: boolean;
   loadingMore?: boolean;
   onLoadMore?: () => void;
 }) {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [editing, setEditing] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState("");
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
 
   useEffect(() => {
     if (!hasMore || loadingMore) return;
@@ -65,9 +65,7 @@ export function PostList({
 
   if (posts.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        No posts yet.
-      </p>
+      <p className="py-8 text-center text-sm text-muted-foreground">No posts yet.</p>
     );
   }
 
@@ -78,23 +76,6 @@ export function PostList({
       else next.add(id);
       return next;
     });
-  };
-
-  const startEditing = (post: Post) => {
-    setEditing(post.id);
-    setEditContent(post.content);
-  };
-
-  const cancelEditing = () => {
-    setEditing(null);
-    setEditContent("");
-  };
-
-  const saveEdit = async (postId: string) => {
-    if (editContent.trim().length === 0) return;
-    onEdit(postId, editContent.trim());
-    setEditing(null);
-    setEditContent("");
   };
 
   return (
@@ -114,11 +95,7 @@ export function PostList({
               <div className="flex items-center justify-between px-4 pt-4">
                 <div className="flex items-center gap-2">
                   {post.userImage ? (
-                    <img
-                      src={post.userImage}
-                      alt={post.userName || ""}
-                      className="h-6 w-6 rounded-full object-cover"
-                    />
+                    <img src={post.userImage} alt={post.userName || ""} className="h-6 w-6 rounded-full object-cover" />
                   ) : (
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
                       {(post.userName || post.userId).charAt(0).toUpperCase()}
@@ -141,7 +118,7 @@ export function PostList({
                     />
                     <DropdownMenuContent align="end">
                       {isOwner && (
-                        <DropdownMenuItem onClick={() => startEditing(post)}>
+                        <DropdownMenuItem onClick={() => setEditingPost(post)}>
                           Edit
                         </DropdownMenuItem>
                       )}
@@ -153,36 +130,17 @@ export function PostList({
                 )}
               </div>
 
-              {editing === post.id ? (
-                <div className="px-4 pb-4 pt-2">
-                  <Textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    rows={3}
-                    className="mb-2"
-                  />
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => saveEdit(post.id)}>
-                      Save
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={cancelEditing}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <p className="px-4 pb-4 pt-2 text-sm whitespace-pre-wrap">
-                  {displayContent}
-                  {post.content.length > TRUNCATE_LENGTH && (
-                    <button
-                      onClick={() => toggleExpand(post.id)}
-                      className="ml-1 text-indigo-600 hover:underline"
-                    >
-                      {truncated ? "Read more" : "Show less"}
-                    </button>
-                  )}
-                </p>
-              )}
+              <p className="px-4 pb-4 pt-2 text-sm whitespace-pre-wrap">
+                {displayContent}
+                {post.content.length > TRUNCATE_LENGTH && (
+                  <button
+                    onClick={() => toggleExpand(post.id)}
+                    className="ml-1 text-primary hover:underline"
+                  >
+                    {truncated ? "Read more" : "Show less"}
+                  </button>
+                )}
+              </p>
 
               <PostImages images={post.images} />
             </li>
@@ -190,11 +148,21 @@ export function PostList({
         })}
       </ul>
 
+      {editingPost && (
+        <EditPostDialog
+          open
+          onOpenChange={() => setEditingPost(null)}
+          postId={editingPost.id}
+          groupId={groupId}
+          initialContent={editingPost.content}
+          initialImages={editingPost.images}
+          onSave={onEdit}
+        />
+      )}
+
       {hasMore && (
         <div ref={sentinelRef} className="flex justify-center py-4">
-          {loadingMore && (
-            <p className="text-xs text-muted-foreground">Loading more...</p>
-          )}
+          {loadingMore && <p className="text-xs text-muted-foreground">Loading more...</p>}
         </div>
       )}
     </div>
