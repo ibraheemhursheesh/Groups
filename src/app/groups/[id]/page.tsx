@@ -66,7 +66,7 @@ export default async function GroupPage({
           </p>
         )}
         {currentMember && (
-          <div className="mt-2 flex items-center justify-between">
+          <div className="mt-2 flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-2">
               {/* <p className="text-xs text-muted-foreground">
                 Role: {currentMember.role}

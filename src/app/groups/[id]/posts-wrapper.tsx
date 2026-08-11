@@ -23,6 +23,8 @@ type Post = {
   userImage: string | null;
   content: string;
   images: string[];
+  likeCount: number;
+  hasLiked: boolean;
   createdAt: Date;
 };
 
@@ -80,16 +82,19 @@ export function PostsWrapper({
     const optimisticImageUrls = imageFiles
       .filter((f) => f.size > 0)
       .map((f) => URL.createObjectURL(f));
+    const optimisticId = `optimistic-${crypto.randomUUID()}`;
 
     if (isAdmin) {
       setApprovedPosts((prev) => [
         {
-          id: `optimistic-${crypto.randomUUID()}`,
+          id: optimisticId,
           userId: currentUserId,
           userName: currentUserName,
           userImage: currentUserImage,
           content: (formData.get("content") as string)?.trim() || "",
           images: optimisticImageUrls,
+          likeCount: 0,
+          hasLiked: false,
           createdAt: new Date(),
         },
         ...prev,
@@ -97,7 +102,7 @@ export function PostsWrapper({
     } else {
       setMyPendingPosts((prev) => [
         {
-          id: `optimistic-${crypto.randomUUID()}`,
+          id: optimisticId,
           content: (formData.get("content") as string)?.trim() || "",
           images: optimisticImageUrls,
           createdAt: new Date(),
@@ -106,7 +111,13 @@ export function PostsWrapper({
       ]);
     }
 
-    createPost(formData);
+    createPost(formData).then((realId) => {
+      if (realId) {
+        setApprovedPosts((prev) =>
+          prev.map((p) => (p.id === optimisticId ? { ...p, id: realId } : p)),
+        );
+      }
+    });
   };
 
   const handleApprove = async (postId: string) => {
@@ -181,7 +192,7 @@ export function PostsWrapper({
 
   return (
     <>
-      {!viewOnly && (
+      {!viewOnly && !isAdmin && (
         <PostComposer
           groupId={groupId}
           isAdmin={isAdmin}
@@ -189,66 +200,104 @@ export function PostsWrapper({
         />
       )}
 
-      {isAdmin && (pendingRequests.length > 0 || pendingPosts.length > 0) && (
-        <div className="mb-6">
-          <Tabs defaultValue={pendingRequests.length > 0 ? "requests" : "posts"}>
-            <TabsList>
+      {isAdmin ? (
+        <Tabs defaultValue="posts">
+          <TabsList>
+            <TabsTrigger value="posts">Posts</TabsTrigger>
+            {pendingPosts.length > 0 && (
+              <TabsTrigger value="pending-posts">
+                Pending posts ({pendingPosts.length})
+              </TabsTrigger>
+            )}
+            {pendingRequests.length > 0 && (
               <TabsTrigger value="requests">
                 Join requests ({pendingRequests.length})
               </TabsTrigger>
-              <TabsTrigger value="posts">
-                Pending posts ({pendingPosts.length})
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="requests">
-              {pendingRequests.length > 0 && (
-                <PendingRequestsSection
-                  requests={pendingRequests}
-                  onApprove={handleApproveRequest}
-                  onReject={handleRejectRequest}
-                />
-              )}
-            </TabsContent>
-            <TabsContent value="posts">
-              {pendingPosts.length > 0 && (
-                <PendingPostsSection
-                  posts={pendingPosts}
-                  onApprove={handleApprove}
-                  onReject={handleReject}
-                />
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
-      )}
+            )}
+          </TabsList>
 
-      {!isAdmin && myPendingPosts.length > 0 && (
-        <div className="mb-6 rounded-xl border p-4">
-          <h3 className="mb-3 font-semibold text-sm text-muted-foreground">
-            Your pending posts ({myPendingPosts.length})
-          </h3>
-          <ul className="space-y-3">
-            {myPendingPosts.map((post) => (
-              <li key={post.id} className="rounded-lg bg-muted/50 p-4">
-                <p className="text-sm">{post.content}</p>
-                <PostImages images={post.images} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+          <TabsContent value="posts">
+            <PostComposer
+              groupId={groupId}
+              isAdmin={isAdmin}
+              onOptimisticSubmit={handlePostSubmit}
+            />
+            <PostList
+              posts={approvedPosts}
+              currentUserId={currentUserId}
+              isAdmin={isAdmin}
+              groupId={groupId}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+              hasMore={cursor !== null}
+              loadingMore={loadingMore}
+              onLoadMore={handleLoadMore}
+            />
+          </TabsContent>
 
-      <PostList
-        posts={approvedPosts}
-        currentUserId={currentUserId}
-        isAdmin={isAdmin}
-        groupId={groupId}
-        onDelete={handleDelete}
-        onEdit={handleEdit}
-        hasMore={cursor !== null}
-        loadingMore={loadingMore}
-        onLoadMore={handleLoadMore}
-      />
+          <TabsContent value="pending-posts">
+            <PendingPostsSection
+              posts={pendingPosts}
+              onApprove={handleApprove}
+              onReject={handleReject}
+            />
+          </TabsContent>
+
+          <TabsContent value="requests">
+            <PendingRequestsSection
+              requests={pendingRequests}
+              onApprove={handleApproveRequest}
+              onReject={handleRejectRequest}
+            />
+          </TabsContent>
+        </Tabs>
+      ) : myPendingPosts.length > 0 ? (
+        <Tabs defaultValue="posts">
+          <TabsList>
+            <TabsTrigger value="posts">Posts</TabsTrigger>
+            <TabsTrigger value="my-pending">
+              Your pending posts ({myPendingPosts.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="posts">
+            <PostList
+              posts={approvedPosts}
+              currentUserId={currentUserId}
+              isAdmin={isAdmin}
+              groupId={groupId}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+              hasMore={cursor !== null}
+              loadingMore={loadingMore}
+              onLoadMore={handleLoadMore}
+            />
+          </TabsContent>
+
+          <TabsContent value="my-pending">
+            <div className="space-y-3">
+              {myPendingPosts.map((post) => (
+                <div key={post.id} className="rounded-lg bg-muted/50 p-4">
+                  <p className="text-sm">{post.content}</p>
+                  <PostImages images={post.images} />
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <PostList
+          posts={approvedPosts}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+          groupId={groupId}
+          onDelete={handleDelete}
+          onEdit={handleEdit}
+          hasMore={cursor !== null}
+          loadingMore={loadingMore}
+          onLoadMore={handleLoadMore}
+        />
+      )}
     </>
   );
 }

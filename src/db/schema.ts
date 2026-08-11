@@ -17,6 +17,21 @@ export const posts = pgTable("posts", {
   approvedAt: t.timestamp("approved_at", { precision: 6, withTimezone: true }),
 });
 
+export const likes = pgTable("likes", {
+  id: t.text("id").primaryKey(),
+  postId: t
+    .text("post_id")
+    .notNull()
+    .references(() => posts.id, { onDelete: "cascade" }),
+  userId: t
+    .text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: t
+    .timestamp("created_at", { precision: 6, withTimezone: true })
+    .notNull(),
+});
+
 export const joinRequests = pgTable("join_requests", {
   id: t.text("id").primaryKey(),
   groupId: t.text("group_id").notNull(),

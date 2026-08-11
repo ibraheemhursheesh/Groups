@@ -2,8 +2,8 @@
 
 import { auth } from "@/app/lib/auth";
 import { db } from "@/index";
-import { joinRequests, posts, user, organization, member as memberTable } from "@/db/schema";
-import { eq, and, desc, lt } from "drizzle-orm";
+import { joinRequests, posts, user, organization, member as memberTable, likes } from "@/db/schema";
+import { eq, and, desc, lt, count, inArray } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { uploadGroupCover, supabase, STORAGE_BUCKET } from "@/app/lib/supabase";
@@ -112,9 +112,32 @@ export const getApprovedPosts = async (
 
   const hasMore = result.length > limit;
   const items = hasMore ? result.slice(0, limit) : result;
+
+  const postIds = items.map((p) => p.id);
+
+  const likeCounts = postIds.length > 0
+    ? await db
+        .select({ postId: likes.postId, count: count() })
+        .from(likes)
+        .where(inArray(likes.postId, postIds))
+        .groupBy(likes.postId)
+    : [];
+
+  const userLikes = postIds.length > 0
+    ? await db
+        .select({ postId: likes.postId })
+        .from(likes)
+        .where(and(eq(likes.userId, session.user.id), inArray(likes.postId, postIds)))
+    : [];
+
+  const likeCountMap = new Map(likeCounts.map((l) => [l.postId, Number(l.count)]));
+  const userLikeSet = new Set(userLikes.map((l) => l.postId));
+
   const posts_list = (items as any[]).map((p) => ({
     ...p,
     images: parseImages(p.images),
+    likeCount: likeCountMap.get(p.id) ?? 0,
+    hasLiked: userLikeSet.has(p.id),
   }));
   const nextCursor = hasMore
     ? (items[items.length - 1].approvedAt?.toISOString() ?? null)
@@ -494,6 +517,8 @@ export const createPost = async (formData: FormData) => {
     createdAt: new Date(),
     approvedAt: isAdmin ? new Date() : null,
   });
+
+  return postId;
 }
 
 export const handlePostApproval = async (postId: string, groupId: string, action: "approve" | "reject") => {
@@ -693,3 +718,40 @@ export const updateGroupSettings = async (formData: FormData) => {
 
   await db.update(organization).set(updates as any).where(eq(organization.id, groupId));
 };
+
+export const toggleLikePost = async (postId: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    throw new Error("Not authenticated");
+  }
+
+  const [existing] = await db
+    .select()
+    .from(likes)
+    .where(and(eq(likes.postId, postId), eq(likes.userId, session.user.id)));
+
+  if (existing) {
+    await db.delete(likes).where(eq(likes.id, existing.id));
+    return { liked: false, likeCount: await getLikeCount(postId) };
+  }
+
+  await db.insert(likes).values({
+    id: crypto.randomUUID(),
+    postId,
+    userId: session.user.id,
+    createdAt: new Date(),
+  });
+
+  return { liked: true, likeCount: await getLikeCount(postId) };
+};
+
+async function getLikeCount(postId: string): Promise<number> {
+  const [result] = await db
+    .select({ count: count() })
+    .from(likes)
+    .where(eq(likes.postId, postId));
+  return Number(result?.count ?? 0);
+}

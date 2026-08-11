@@ -12,6 +12,7 @@ import { MoreHorizontal, Heart, MessageCircle, Share2 } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
 import { PostImages } from "./post-images";
 import { EditPostDialog } from "./edit-post-dialog";
+import { toggleLikePost } from "@/app/actions/groups";
 
 const TRUNCATE_LENGTH = 300;
 
@@ -22,6 +23,8 @@ type Post = {
   userImage: string | null;
   content: string;
   images: string[];
+  likeCount: number;
+  hasLiked: boolean;
   createdAt: Date;
 };
 
@@ -49,6 +52,25 @@ export function PostList({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [likeStates, setLikeStates] = useState<Map<string, { liked: boolean; count: number }>>(new Map());
+  const likeStatesRef = useRef(likeStates);
+  likeStatesRef.current = likeStates;
+
+  const handleLike = (post: Post) => {
+    const optimistic = likeStatesRef.current.get(post.id);
+    const liked = optimistic?.liked ?? post.hasLiked;
+    const currentCount = optimistic?.count ?? post.likeCount;
+
+    setLikeStates((prev) => {
+      const next = new Map(prev);
+      next.set(post.id, {
+        liked: !liked,
+        count: liked ? currentCount - 1 : currentCount + 1,
+      });
+      return next;
+    });
+    toggleLikePost(post.id);
+  };
 
   useEffect(() => {
     if (!hasMore || loadingMore) return;
@@ -149,8 +171,20 @@ export function PostList({
               <PostImages images={post.images} />
 
               <div className="flex items-center gap-4 px-4 pb-3 pt-2 text-muted-foreground justify-evenly">
-                <button className="flex items-center gap-1.5 text-xs transition hover:text-red-500">
-                  <Heart className="size-4" />
+                <button
+                  onClick={() => handleLike(post)}
+                  className="flex items-center gap-1.5 text-xs transition hover:text-red-500"
+                >
+                  <Heart
+                    className={`size-4 ${
+                      (likeStates.get(post.id)?.liked ?? post.hasLiked)
+                        ? "fill-red-500 text-red-500"
+                        : ""
+                    }`}
+                  />
+                  {(likeStates.get(post.id)?.count ?? post.likeCount) > 0 && (
+                    <span>{likeStates.get(post.id)?.count ?? post.likeCount}</span>
+                  )}
                 </button>
                 <button className="flex items-center gap-1.5 text-xs transition hover:text-blue-500">
                   <MessageCircle className="size-4" />
