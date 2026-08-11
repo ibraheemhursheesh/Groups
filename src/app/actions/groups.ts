@@ -58,9 +58,20 @@ export const listAllGroups = async () => {
     throw new Error("Not authenticated");
   }
 
-  const allOrgs = await db.select().from(organization);
+  const allOrgs = await db.select().from(organization).orderBy(desc(organization.createdAt));
 
-  return allOrgs;
+  const memberships = await db
+    .select({ organizationId: memberTable.organizationId })
+    .from(memberTable)
+    .where(eq(memberTable.userId, session.user.id));
+
+  const memberOrgIds = new Set(memberships.map((m) => m.organizationId));
+
+  return allOrgs.filter((org) => {
+    const meta = parseMetadata(org.metadata);
+    if (meta?.isPrivate && !memberOrgIds.has(org.id)) return false;
+    return true;
+  });
 };
 
 export const getApprovedPosts = async (
@@ -122,6 +133,16 @@ const parseImages = (images: unknown): string[] => {
   }
 };
 
+const parseMetadata = (metadata: unknown): Record<string, unknown> | null => {
+  if (!metadata) return null;
+  if (typeof metadata === "object") return metadata as Record<string, unknown>;
+  try {
+    return JSON.parse(metadata as string);
+  } catch {
+    return null;
+  }
+};
+
 export const getGroupPageData = async (groupId: string) => {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -140,6 +161,8 @@ export const getGroupPageData = async (groupId: string) => {
     return null;
   }
 
+  const meta = parseMetadata(org.metadata);
+
   let orgResult = null;
   try {
     orgResult = await auth.api.getFullOrganization({
@@ -153,6 +176,8 @@ export const getGroupPageData = async (groupId: string) => {
   const currentMember = orgResult?.members.find(
     (m) => m.userId === session.user.id,
   );
+
+  const isPublicGroup = !meta?.isPrivate;
 
   // Fetch the current user's full profile (including Google photo URL)
   const [currentUserProfile] = await db
@@ -206,7 +231,7 @@ export const getGroupPageData = async (groupId: string) => {
       : [];
 
   // Use getApprovedPosts for the initial page to get cursor-based pagination
-  const { posts: approvedPosts, nextCursor } = currentMember
+  const { posts: approvedPosts, nextCursor } = currentMember || isPublicGroup
     ? await getApprovedPosts(groupId, undefined, 10)
     : { posts: [], nextCursor: null };
 
@@ -274,12 +299,34 @@ export const requestToJoin = async (groupId: string) => {
     return;
   }
 
-  await db.insert(joinRequests).values({
-    id: crypto.randomUUID(),
-    groupId,
-    userId: session.user.id,
-    createdAt: new Date(),
-  });
+  const [org] = await db
+    .select()
+    .from(organization)
+    .where(eq(organization.id, groupId));
+
+  if (!org) {
+    throw new Error("Group not found");
+  }
+
+  const meta = parseMetadata(org.metadata);
+  const isPublic = !meta?.isPrivate;
+
+  if (isPublic) {
+    await auth.api.addMember({
+      body: {
+        organizationId: groupId,
+        userId: session.user.id,
+        role: "member",
+      },
+    });
+  } else {
+    await db.insert(joinRequests).values({
+      id: crypto.randomUUID(),
+      groupId,
+      userId: session.user.id,
+      createdAt: new Date(),
+    });
+  }
 };
 
 export const handleJoinRequest = async (requestId: string, groupId: string, action: "approve" | "reject") => {
@@ -568,4 +615,78 @@ export const editPost = async (formData: FormData) => {
     .where(eq(posts.id, postId));
 
   return imageUrls;
+};
+
+export const updateGroupSettings = async (formData: FormData) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    throw new Error("Not authenticated");
+  }
+
+  const groupId = formData.get("groupId") as string;
+  const name = formData.get("name") as string;
+  const description = formData.get("description") as string;
+  const isPrivate = formData.get("isPrivate") === "true";
+  const coverFile = formData.get("cover") as File | null;
+
+  const [org] = await db
+    .select()
+    .from(organization)
+    .where(eq(organization.id, groupId));
+
+  if (!org) {
+    throw new Error("Group not found");
+  }
+
+  const [adminMember] = await db
+    .select()
+    .from(memberTable)
+    .where(
+      and(
+        eq(memberTable.organizationId, groupId),
+        eq(memberTable.userId, session.user.id),
+        eq(memberTable.role, "admin"),
+      ),
+    );
+
+  if (!adminMember) {
+    throw new Error("Only the admin can change settings");
+  }
+
+  const updates: Record<string, unknown> = {};
+
+  if (name && name.trim().length > 0 && name.trim() !== org.name) {
+    updates.name = name.trim();
+    updates.slug = name.trim().toLowerCase().replace(/\s+/g, "-") + "-" + crypto.randomUUID().slice(0, 8);
+  }
+
+  if (coverFile && coverFile.size > 0) {
+    const ext = coverFile.name.split(".").pop() || "png";
+    const path = `${groupId}/cover_${crypto.randomUUID()}.${ext}`;
+    const uploadResult = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(path, coverFile, {
+        contentType: coverFile.type,
+        upsert: false,
+      });
+    if (!uploadResult.error) {
+      const { data } = supabase.storage
+        .from(STORAGE_BUCKET)
+        .getPublicUrl(path);
+      updates.logo = data.publicUrl;
+    }
+  }
+
+  const currentMeta = parseMetadata(org.metadata) || {};
+  const newMeta = {
+    ...currentMeta,
+    description: description?.trim() || currentMeta.description || "",
+    isPrivate: isPrivate,
+  };
+  updates.metadata = JSON.stringify(newMeta);
+
+  await db.update(organization).set(updates as any).where(eq(organization.id, groupId));
 };

@@ -47,6 +47,7 @@ export function PostsWrapper({
   currentUserId,
   currentUserName,
   currentUserImage,
+  viewOnly = false,
   initialApprovedPosts,
   initialNextCursor,
   initialPendingPosts,
@@ -58,6 +59,7 @@ export function PostsWrapper({
   currentUserId: string;
   currentUserName: string | null;
   currentUserImage: string | null;
+  viewOnly?: boolean;
   initialApprovedPosts: Post[];
   initialNextCursor: string | null;
   initialPendingPosts: Post[];
@@ -179,11 +181,13 @@ export function PostsWrapper({
 
   return (
     <>
-      <PostForm
-        groupId={groupId}
-        isAdmin={isAdmin}
-        onOptimisticSubmit={handlePostSubmit}
-      />
+      {!viewOnly && (
+        <PostForm
+          groupId={groupId}
+          isAdmin={isAdmin}
+          onOptimisticSubmit={handlePostSubmit}
+        />
+      )}
 
       {isAdmin && (pendingRequests.length > 0 || pendingPosts.length > 0) && (
         <div className="mb-6">

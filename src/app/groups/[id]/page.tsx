@@ -3,6 +3,7 @@ import { JoinButton } from "./join-button";
 import { PostsWrapper } from "./posts-wrapper";
 import { GroupActions } from "./leave-button";
 import { MembersList } from "./members-list";
+import { GroupSettingsDialog } from "./group-settings-dialog";
 import Image from "next/image";
 
 export default async function GroupPage({
@@ -37,6 +38,7 @@ export default async function GroupPage({
   const metadata = typeof org.metadata === "string"
     ? JSON.parse(org.metadata || "{}")
     : (org.metadata || {});
+  const isPublic = !metadata?.isPrivate;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
@@ -55,22 +57,54 @@ export default async function GroupPage({
           <p className="mt-2 text-muted-foreground">{metadata.description}</p>
         )}
         {currentMember && (
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              Role: {currentMember.role}
-            </p>
-            <MembersList
-              members={members as any[]}
-              currentUserId={currentMember.userId}
-              isAdmin={currentMember.role === "admin"}
-              groupId={id}
-            />
+          <div className="mt-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground">
+                Role: {currentMember.role}
+              </p>
+              <MembersList
+                members={members as any[]}
+                currentUserId={currentMember.userId}
+                isAdmin={currentMember.role === "admin"}
+                groupId={id}
+              />
+            </div>
+            {currentMember.role === "admin" && (
+              <GroupSettingsDialog
+                groupId={id}
+                name={org.name}
+                description={metadata?.description || ""}
+                logo={org.logo ?? null}
+                isPrivate={!!metadata?.isPrivate}
+              />
+            )}
           </div>
         )}
       </div>
 
-      {!currentMember && (
-        <JoinButton groupId={id} hasExistingRequest={!!joinRequest} />
+      {!currentMember && !isPublic && (
+        <JoinButton groupId={id} hasExistingRequest={!!joinRequest} isPublic={false} />
+      )}
+
+      {!currentMember && isPublic && (
+        <>
+          <PostsWrapper
+            groupId={id}
+            isAdmin={false}
+            currentUserId=""
+            currentUserName={null}
+            currentUserImage={null}
+            viewOnly
+            initialApprovedPosts={approvedPosts as any[]}
+            initialNextCursor={approvedNextCursor}
+            initialPendingPosts={[]}
+            initialMyPendingPosts={[]}
+            initialPendingRequests={[]}
+          />
+          <div className="mb-6">
+            <JoinButton groupId={id} hasExistingRequest={false} isPublic />
+          </div>
+        </>
       )}
 
       {currentMember && (
