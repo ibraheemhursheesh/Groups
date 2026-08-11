@@ -103,7 +103,7 @@ export function PostList({
 
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold">Posts</h3>
+      {/* <h3 className="font-semibold">Posts</h3> */}
       <ul className="space-y-3">
         {posts.map((post) => {
           const truncated =
@@ -129,19 +129,18 @@ export function PostList({
                     </div>
                   )}
                   <span className="text-xs text-muted-foreground">
-                    {post.userName || post.userId} · {timeAgo(new Date(post.createdAt))}
+                    {post.userName || post.userId} ·{" "}
+                    {timeAgo(new Date(post.createdAt))}
                   </span>
                 </div>
 
                 {(isAdmin || isOwner) && (
                   <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button variant="ghost" size="xs">
-                          <MoreHorizontal className="size-4" />
-                        </Button>
-                      }
-                    />
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="xs">
+                        <MoreHorizontal className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       {isOwner && (
                         <DropdownMenuItem onClick={() => setEditingPost(post)}>
@@ -173,7 +172,7 @@ export function PostList({
               <div className="flex items-center gap-4 px-4 pb-3 pt-2 text-muted-foreground justify-evenly">
                 <button
                   onClick={() => handleLike(post)}
-                  className="flex items-center gap-1.5 text-xs transition hover:text-red-500"
+                  className="py-2 px-5 flex items-center gap-1.5 text-xs transition hover:text-red-500 hover:bg-red-100 rounded-md"
                 >
                   <Heart
                     className={`size-4 ${
@@ -183,13 +182,15 @@ export function PostList({
                     }`}
                   />
                   {(likeStates.get(post.id)?.count ?? post.likeCount) > 0 && (
-                    <span>{likeStates.get(post.id)?.count ?? post.likeCount}</span>
+                    <span>
+                      {likeStates.get(post.id)?.count ?? post.likeCount}
+                    </span>
                   )}
                 </button>
-                <button className="flex items-center gap-1.5 text-xs transition hover:text-blue-500">
+                <button className="py-2 px-5 flex items-center gap-1.5 text-xs transition hover:text-blue-500 hover:bg-blue-100 rounded-md">
                   <MessageCircle className="size-4" />
                 </button>
-                <button className="flex items-center gap-1.5 text-xs transition hover:text-green-500">
+                <button className="py-2 px-5 flex items-center gap-1.5 text-xs transition hover:text-green-500 hover:bg-green-100 rounded-md">
                   <Share2 className="size-4" />
                 </button>
               </div>
@@ -212,7 +213,9 @@ export function PostList({
 
       {hasMore && (
         <div ref={sentinelRef} className="flex justify-center py-4">
-          {loadingMore && <p className="text-xs text-muted-foreground">Loading more...</p>}
+          {loadingMore && (
+            <p className="text-xs text-muted-foreground">Loading more...</p>
+          )}
         </div>
       )}
     </div>

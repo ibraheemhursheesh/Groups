@@ -71,14 +71,12 @@ export function AccountSwitcher() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
+      <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="gap-1.5">
             <UserRound className="size-4" />
             Switch account
           </Button>
-        }
-      />
+      </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <p className="px-2 py-1.5 text-xs text-muted-foreground">
           Active sessions

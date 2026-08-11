@@ -202,15 +202,17 @@ export function PostsWrapper({
 
       {isAdmin ? (
         <Tabs defaultValue="posts">
-          <TabsList>
-            <TabsTrigger value="posts">Posts</TabsTrigger>
+          <TabsList className="bg-transparent w-full">
+            <TabsTrigger className="py-2.5" value="posts">
+              Posts
+            </TabsTrigger>
             {pendingPosts.length > 0 && (
-              <TabsTrigger value="pending-posts">
+              <TabsTrigger className="py-2.5" value="pending-posts">
                 Pending posts ({pendingPosts.length})
               </TabsTrigger>
             )}
             {pendingRequests.length > 0 && (
-              <TabsTrigger value="requests">
+              <TabsTrigger className="py-2.5" value="requests">
                 Join requests ({pendingRequests.length})
               </TabsTrigger>
             )}

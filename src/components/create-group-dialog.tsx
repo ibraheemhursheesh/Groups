@@ -61,7 +61,12 @@ export function CreateGroupDialog() {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) clearPreview(); }}>
-      <DialogTrigger render={<Button variant="outline"><PlusIcon /> Create Group</Button>} />
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <PlusIcon />
+          Create Group
+        </Button>
+      </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Create a group</DialogTitle>

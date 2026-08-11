@@ -24,7 +24,7 @@ export function PendingPostsSection({
 }) {
   return (
     <div className="mb-6 rounded-xl border p-4">
-      <h3 className="mb-3 font-semibold">Pending posts ({posts.length})</h3>
+      {/* <h3 className="mb-3 font-semibold">Pending posts ({posts.length})</h3> */}
       <ul className="space-y-3">
         {posts.map((post) => (
           <li key={post.id} className="overflow-hidden rounded-lg bg-muted/50">
@@ -46,10 +46,18 @@ export function PendingPostsSection({
                 </span>
               </div>
               <div className="flex gap-2">
-                <Button variant="default" size="sm" onClick={() => onApprove(post.id)}>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => onApprove(post.id)}
+                >
                   Approve
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => onReject(post.id)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onReject(post.id)}
+                >
                   Reject
                 </Button>
               </div>

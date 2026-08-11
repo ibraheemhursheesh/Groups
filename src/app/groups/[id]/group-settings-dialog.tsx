@@ -98,19 +98,32 @@ function SettingsForm({
     <div className="grid gap-4">
       <div className="grid gap-2">
         <label className="text-sm font-medium">Name</label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} disabled={saving} />
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={saving}
+        />
       </div>
 
       <div className="grid gap-2">
         <label className="text-sm font-medium">Description</label>
-        <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} disabled={saving} />
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+          disabled={saving}
+        />
       </div>
 
       <div className="grid gap-2">
         <label className="text-sm font-medium">Cover image</label>
         {preview ? (
           <div className="relative overflow-hidden rounded-lg border">
-            <img src={preview} alt="Preview" className="aspect-video w-full object-cover" />
+            <img
+              src={preview}
+              alt="Preview"
+              className="aspect-video w-full object-cover"
+            />
             <button
               type="button"
               onClick={() => {
@@ -133,13 +146,22 @@ function SettingsForm({
             Click to upload a cover image
           </button>
         )}
-        <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange} disabled={saving} className="hidden" />
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          disabled={saving}
+          className="hidden"
+        />
       </div>
 
       <div className="flex items-center justify-between rounded-lg border p-3">
         <div>
           <p className="text-sm font-medium">Private group</p>
-          <p className="text-xs text-muted-foreground">Only members can see this group</p>
+          <p className="text-xs text-muted-foreground">
+            Only members can see this group
+          </p>
         </div>
         <button
           type="button"
@@ -161,11 +183,11 @@ function SettingsForm({
       <hr className="border-t" />
 
       <div>
-        <p className="text-sm font-medium text-destructive">Danger zone</p>
-        <p className="mb-2 text-xs text-muted-foreground">
-          Permanently delete this group and all its posts.
-        </p>
-        <Button variant="destructive" onClick={() => setConfirmDelete(true)} disabled={saving}>
+        <Button
+          variant="destructive"
+          onClick={() => setConfirmDelete(true)}
+          disabled={saving}
+        >
           Delete group
         </Button>
       </div>
@@ -173,7 +195,6 @@ function SettingsForm({
       <ConfirmContent
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
-        isMobile={isMobile}
         onDelete={async () => {
           setDeleting(true);
           await deleteGroup(groupId);
@@ -189,43 +210,14 @@ function SettingsForm({
 function ConfirmContent({
   open,
   onOpenChange,
-  isMobile,
   onDelete,
   deleting,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  isMobile: boolean;
   onDelete: () => Promise<void>;
   deleting: boolean;
 }) {
-  const body = (
-    <>
-      <div className="mb-4">
-        <p className="text-lg font-semibold">Delete group</p>
-        <p className="text-sm text-muted-foreground">
-          Are you sure you want to delete this group? Deleting this group will remove all posts from it.
-        </p>
-      </div>
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={deleting}>
-          Cancel
-        </Button>
-        <Button variant="destructive" onClick={onDelete} disabled={deleting}>
-          {deleting ? "Deleting..." : "Delete"}
-        </Button>
-      </div>
-    </>
-  );
-
-  if (isMobile) {
-    return (
-      <VaulDrawer open={open} onOpenChange={onOpenChange}>
-        {body}
-      </VaulDrawer>
-    );
-  }
-
   return (
     <ConfirmDialog open={open} onOpenChange={onOpenChange}>
       <ConfirmDialogContent className="sm:max-w-md">
@@ -275,7 +267,7 @@ export function GroupSettingsDialog(props: GroupSettingsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={trigger} />
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Group settings</DialogTitle>

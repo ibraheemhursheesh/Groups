@@ -47,7 +47,7 @@ export function PostImages({ images }: { images: string[] }) {
             className="relative cursor-pointer"
             style={{
               aspectRatio: cols === 1 ? "16 / 9" : "1 / 1",
-              maxHeight: rows === 1 ? "400px" : undefined,
+              // maxHeight: rows === 1 ? "400px" : undefined,
             }}
             onClick={() => openCarousel(i)}
           >

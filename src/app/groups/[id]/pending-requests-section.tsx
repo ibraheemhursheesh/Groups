@@ -21,9 +21,9 @@ export function PendingRequestsSection({
 }) {
   return (
     <div className="rounded-xl border p-4">
-      <h3 className="mb-3 font-semibold">
+      {/* <h3 className="mb-3 font-semibold">
         Pending join requests ({requests.length})
-      </h3>
+      </h3> */}
       <ul className="space-y-3">
         {requests.map((req) => (
           <li
@@ -32,7 +32,11 @@ export function PendingRequestsSection({
           >
             <div className="flex items-center gap-2">
               {req.userImage ? (
-                <img src={req.userImage} alt={req.userName || ""} className="h-6 w-6 rounded-full object-cover" />
+                <img
+                  src={req.userImage}
+                  alt={req.userName || ""}
+                  className="h-6 w-6 rounded-full object-cover"
+                />
               ) : (
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
                   {(req.userName || req.userId).charAt(0).toUpperCase()}
@@ -43,10 +47,18 @@ export function PendingRequestsSection({
               </span>
             </div>
             <div className="flex gap-2">
-              <Button variant="default" size="sm" onClick={() => onApprove(req.id)}>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => onApprove(req.id)}
+              >
                 Approve
               </Button>
-              <Button variant="outline" size="sm" onClick={() => onReject(req.id)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onReject(req.id)}
+              >
                 Reject
               </Button>
             </div>

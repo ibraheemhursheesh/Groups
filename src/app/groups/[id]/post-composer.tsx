@@ -52,7 +52,9 @@ export function PostComposer({ groupId, isAdmin, onOptimisticSubmit }: PostCompo
     <>
       <div className="fixed bottom-6 right-6 z-40">
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={trigger} />
+          <DialogTrigger asChild>
+            {trigger}
+          </DialogTrigger>
           <DialogContent className="sm:max-w-md" showCloseButton={false}>
             <DialogHeader>
               <DialogTitle>New post</DialogTitle>

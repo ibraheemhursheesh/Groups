@@ -55,7 +55,7 @@ export default async function GroupPage({
         <h1
           className={
             "text-2xl font-bold tracking-tight" +
-            (currentMember?.role === "admin" ? " text-indigo-300 italic" : "")
+            (currentMember?.role === "admin" ? " italic" : "")
           }
         >
           {org.name}
