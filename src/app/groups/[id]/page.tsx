@@ -54,7 +54,9 @@ export default async function GroupPage({
         )}
         <h1 className="text-2xl font-bold tracking-tight">{org.name}</h1>
         {metadata?.description && (
-          <p className="mt-2 text-muted-foreground">{metadata.description}</p>
+          <p className="mt-2 text-muted-foreground text-sm md:text-base">
+            {metadata.description}
+          </p>
         )}
         {currentMember && (
           <div className="mt-2 flex items-center justify-between">
@@ -83,7 +85,11 @@ export default async function GroupPage({
       </div>
 
       {!currentMember && !isPublic && (
-        <JoinButton groupId={id} hasExistingRequest={!!joinRequest} isPublic={false} />
+        <JoinButton
+          groupId={id}
+          hasExistingRequest={!!joinRequest}
+          isPublic={false}
+        />
       )}
 
       {!currentMember && isPublic && (

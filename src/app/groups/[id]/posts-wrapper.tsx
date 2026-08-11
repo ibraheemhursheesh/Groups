@@ -73,7 +73,7 @@ export function PostsWrapper({
   const [cursor, setCursor] = useState<string | null>(initialNextCursor);
   const [loadingMore, startLoadMore] = useTransition();
 
-  const handlePostSubmit = async (formData: FormData) => {
+  const handlePostSubmit = (formData: FormData) => {
     formData.set("groupId", groupId);
 
     const imageFiles = formData.getAll("images") as File[];
@@ -106,7 +106,7 @@ export function PostsWrapper({
       ]);
     }
 
-    await createPost(formData);
+    createPost(formData);
   };
 
   const handleApprove = async (postId: string) => {

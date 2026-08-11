@@ -10,14 +10,13 @@ const MAX_IMAGES = 10;
 interface PostFormProps {
   groupId: string;
   isAdmin: boolean;
-  onOptimisticSubmit: (formData: FormData) => Promise<void>;
+  onOptimisticSubmit: (formData: FormData) => void;
 }
 
 export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const objectUrlsRef = useRef<string[]>([]);
-  const [loading, setLoading] = useState(false);
   const [previews, setPreviews] = useState<string[]>([]);
 
   const clearPreviews = useCallback(() => {
@@ -52,13 +51,11 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
     const formData = new FormData(e.currentTarget);
     formData.set("groupId", groupId);
-    await onOptimisticSubmit(formData);
+    onOptimisticSubmit(formData);
     formRef.current?.reset();
     clearPreviews();
-    setLoading(false);
   };
 
   return (
@@ -69,7 +66,6 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
         placeholder="Write a post..."
         rows={3}
         required
-        disabled={loading}
         className="mb-3"
       />
 
@@ -108,13 +104,10 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
         accept="image/*"
         multiple
         onChange={handleFileChange}
-        disabled={loading}
         className="hidden"
       />
 
-      <Button type="submit" disabled={loading}>
-        {loading ? "Posting..." : "Post"}
-      </Button>
+      <Button type="submit">Post</Button>
     </form>
   );
 }

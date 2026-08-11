@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useTransition } from "react";
 
 type PendingRequest = {
   id: string;
@@ -20,20 +19,6 @@ export function PendingRequestsSection({
   onApprove: (requestId: string) => Promise<void>;
   onReject: (requestId: string) => Promise<void>;
 }) {
-  const [isPending, startTransition] = useTransition();
-
-  const handleApprove = (requestId: string) => {
-    startTransition(() => {
-      onApprove(requestId);
-    });
-  };
-
-  const handleReject = (requestId: string) => {
-    startTransition(() => {
-      onReject(requestId);
-    });
-  };
-
   return (
     <div className="rounded-xl border p-4">
       <h3 className="mb-3 font-semibold">
@@ -58,10 +43,10 @@ export function PendingRequestsSection({
               </span>
             </div>
             <div className="flex gap-2">
-              <Button variant="default" size="sm" onClick={() => handleApprove(req.id)} disabled={isPending}>
+              <Button variant="default" size="sm" onClick={() => onApprove(req.id)}>
                 Approve
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handleReject(req.id)} disabled={isPending}>
+              <Button variant="outline" size="sm" onClick={() => onReject(req.id)}>
                 Reject
               </Button>
             </div>

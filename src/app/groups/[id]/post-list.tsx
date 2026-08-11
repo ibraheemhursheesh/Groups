@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Heart, MessageCircle, Share2 } from "lucide-react";
 import { PostImages } from "./post-images";
 import { EditPostDialog } from "./edit-post-dialog";
 
@@ -95,7 +95,11 @@ export function PostList({
               <div className="flex items-center justify-between px-4 pt-4">
                 <div className="flex items-center gap-2">
                   {post.userImage ? (
-                    <img src={post.userImage} alt={post.userName || ""} className="h-6 w-6 rounded-full object-cover" />
+                    <img
+                      src={post.userImage}
+                      alt={post.userName || ""}
+                      className="h-6 w-6 rounded-full object-cover"
+                    />
                   ) : (
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
                       {(post.userName || post.userId).charAt(0).toUpperCase()}
@@ -143,6 +147,18 @@ export function PostList({
               </p>
 
               <PostImages images={post.images} />
+
+              <div className="flex items-center gap-4 px-4 pb-3 pt-2 text-muted-foreground justify-evenly">
+                <button className="flex items-center gap-1.5 text-xs transition hover:text-red-500">
+                  <Heart className="size-4" />
+                </button>
+                <button className="flex items-center gap-1.5 text-xs transition hover:text-blue-500">
+                  <MessageCircle className="size-4" />
+                </button>
+                <button className="flex items-center gap-1.5 text-xs transition hover:text-green-500">
+                  <Share2 className="size-4" />
+                </button>
+              </div>
             </li>
           );
         })}

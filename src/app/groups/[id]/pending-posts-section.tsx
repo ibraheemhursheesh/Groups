@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useTransition } from "react";
 import { PostImages } from "./post-images";
 
 type PendingPost = {
@@ -23,20 +22,6 @@ export function PendingPostsSection({
   onApprove: (postId: string) => Promise<void>;
   onReject: (postId: string) => Promise<void>;
 }) {
-  const [isPending, startTransition] = useTransition();
-
-  const handleApprove = (postId: string) => {
-    startTransition(() => {
-      onApprove(postId);
-    });
-  };
-
-  const handleReject = (postId: string) => {
-    startTransition(() => {
-      onReject(postId);
-    });
-  };
-
   return (
     <div className="mb-6 rounded-xl border p-4">
       <h3 className="mb-3 font-semibold">Pending posts ({posts.length})</h3>
@@ -61,20 +46,10 @@ export function PendingPostsSection({
                 </span>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => handleApprove(post.id)}
-                  disabled={isPending}
-                >
+                <Button variant="default" size="sm" onClick={() => onApprove(post.id)}>
                   Approve
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleReject(post.id)}
-                  disabled={isPending}
-                >
+                <Button variant="outline" size="sm" onClick={() => onReject(post.id)}>
                   Reject
                 </Button>
               </div>
