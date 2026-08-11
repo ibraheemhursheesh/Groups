@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Heart, MessageCircle, Share2 } from "lucide-react";
+import { timeAgo } from "@/lib/utils";
 import { PostImages } from "./post-images";
 import { EditPostDialog } from "./edit-post-dialog";
 
@@ -106,8 +107,7 @@ export function PostList({
                     </div>
                   )}
                   <span className="text-xs text-muted-foreground">
-                    {post.userName || post.userId}{" "}
-                    {new Date(post.createdAt).toLocaleDateString()}
+                    {post.userName || post.userId} · {timeAgo(new Date(post.createdAt))}
                   </span>
                 </div>
 

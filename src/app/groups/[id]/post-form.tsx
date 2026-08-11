@@ -65,7 +65,6 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
         name="content"
         placeholder="Write a post..."
         rows={3}
-        required
         className="mb-3"
       />
 

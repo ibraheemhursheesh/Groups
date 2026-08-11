@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { PostForm } from "./post-form";
+import { PostComposer } from "./post-composer";
 import { PendingPostsSection } from "./pending-posts-section";
 import { PendingRequestsSection } from "./pending-requests-section";
 import { PostList } from "./post-list";
@@ -182,7 +182,7 @@ export function PostsWrapper({
   return (
     <>
       {!viewOnly && (
-        <PostForm
+        <PostComposer
           groupId={groupId}
           isAdmin={isAdmin}
           onOptimisticSubmit={handlePostSubmit}

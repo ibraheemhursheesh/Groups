@@ -14,8 +14,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageIcon, SettingsIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { updateGroupSettings } from "@/app/actions/groups";
+import { deleteGroup } from "@/app/actions/groups";
 import { VaulDrawer, useIsMobile } from "@/components/ui/vaul-drawer";
+import {
+  Dialog as ConfirmDialog,
+  DialogContent as ConfirmDialogContent,
+  DialogDescription as ConfirmDialogDescription,
+  DialogFooter as ConfirmDialogFooter,
+  DialogHeader as ConfirmDialogHeader,
+  DialogTitle as ConfirmDialogTitle,
+} from "@/components/ui/dialog";
 
 interface GroupSettingsDialogProps {
   groupId: string;
@@ -32,12 +42,16 @@ function SettingsForm({
   logo: initialLogo,
   isPrivate: initialIsPrivate,
   onClose,
-}: GroupSettingsDialogProps & { onClose: () => void }) {
+  isMobile,
+}: GroupSettingsDialogProps & { onClose: () => void; isMobile: boolean }) {
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDesc || "");
   const [isPrivate, setIsPrivate] = useState(initialIsPrivate);
   const [preview, setPreview] = useState<string | null>(initialLogo);
   const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
 
@@ -143,7 +157,94 @@ function SettingsForm({
       <Button onClick={handleSave} disabled={saving}>
         {saving ? "Saving..." : "Save"}
       </Button>
+
+      <hr className="border-t" />
+
+      <div>
+        <p className="text-sm font-medium text-destructive">Danger zone</p>
+        <p className="mb-2 text-xs text-muted-foreground">
+          Permanently delete this group and all its posts.
+        </p>
+        <Button variant="destructive" onClick={() => setConfirmDelete(true)} disabled={saving}>
+          Delete group
+        </Button>
+      </div>
+
+      <ConfirmContent
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        isMobile={isMobile}
+        onDelete={async () => {
+          setDeleting(true);
+          await deleteGroup(groupId);
+          setDeleting(false);
+          router.push("/");
+        }}
+        deleting={deleting}
+      />
     </div>
+  );
+}
+
+function ConfirmContent({
+  open,
+  onOpenChange,
+  isMobile,
+  onDelete,
+  deleting,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  isMobile: boolean;
+  onDelete: () => Promise<void>;
+  deleting: boolean;
+}) {
+  const body = (
+    <>
+      <div className="mb-4">
+        <p className="text-lg font-semibold">Delete group</p>
+        <p className="text-sm text-muted-foreground">
+          Are you sure you want to delete this group? Deleting this group will remove all posts from it.
+        </p>
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={deleting}>
+          Cancel
+        </Button>
+        <Button variant="destructive" onClick={onDelete} disabled={deleting}>
+          {deleting ? "Deleting..." : "Delete"}
+        </Button>
+      </div>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <VaulDrawer open={open} onOpenChange={onOpenChange}>
+        {body}
+      </VaulDrawer>
+    );
+  }
+
+  return (
+    <ConfirmDialog open={open} onOpenChange={onOpenChange}>
+      <ConfirmDialogContent className="sm:max-w-md">
+        <ConfirmDialogHeader>
+          <ConfirmDialogTitle>Delete group</ConfirmDialogTitle>
+          <ConfirmDialogDescription>
+            Are you sure you want to delete this group? Deleting this group will remove all posts from it.
+          </ConfirmDialogDescription>
+        </ConfirmDialogHeader>
+        <ConfirmDialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={onDelete} disabled={deleting}>
+            {deleting ? "Deleting..." : "Delete"}
+          </Button>
+        </ConfirmDialogFooter>
+      </ConfirmDialogContent>
+    </ConfirmDialog>
   );
 }
 
@@ -167,7 +268,7 @@ export function GroupSettingsDialog(props: GroupSettingsDialogProps) {
         <p className="mb-4 text-sm text-muted-foreground">
           Update your group name, description, cover, and visibility.
         </p>
-        <SettingsForm {...props} onClose={handleClose} />
+        <SettingsForm {...props} onClose={handleClose} isMobile />
       </VaulDrawer>
     );
   }
@@ -182,7 +283,7 @@ export function GroupSettingsDialog(props: GroupSettingsDialogProps) {
             Update your group name, description, cover, and visibility.
           </DialogDescription>
         </DialogHeader>
-        <SettingsForm {...props} onClose={handleClose} />
+        <SettingsForm {...props} onClose={handleClose} isMobile={false} />
       </DialogContent>
     </Dialog>
   );

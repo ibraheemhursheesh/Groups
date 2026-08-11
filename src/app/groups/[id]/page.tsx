@@ -52,7 +52,14 @@ export default async function GroupPage({
             height={400}
           />
         )}
-        <h1 className="text-2xl font-bold tracking-tight">{org.name}</h1>
+        <h1
+          className={
+            "text-2xl font-bold tracking-tight" +
+            (currentMember?.role === "admin" ? " text-indigo-300 italic" : "")
+          }
+        >
+          {org.name}
+        </h1>
         {metadata?.description && (
           <p className="mt-2 text-muted-foreground text-sm md:text-base">
             {metadata.description}
@@ -61,9 +68,9 @@ export default async function GroupPage({
         {currentMember && (
           <div className="mt-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <p className="text-xs text-muted-foreground">
+              {/* <p className="text-xs text-muted-foreground">
                 Role: {currentMember.role}
-              </p>
+              </p> */}
               <MembersList
                 members={members as any[]}
                 currentUserId={currentMember.userId}

@@ -438,11 +438,12 @@ export const createPost = async (formData: FormData) => {
   }
 
   const groupId = formData.get("groupId") as string;
-  const content = formData.get("content") as string;
+  const content = (formData.get("content") as string) || "";
   const imageFiles = formData.getAll("images") as File[];
+  const hasImages = imageFiles.some((f) => f.size > 0);
 
-  if (!content || content.trim().length === 0) {
-    throw new Error("Post content is required");
+  if (!content.trim() && !hasImages) {
+    throw new Error("Post content or an image is required");
   }
 
   const memberResult = await auth.api.getFullOrganization({
@@ -584,8 +585,10 @@ export const editPost = async (formData: FormData) => {
     throw new Error("You can only edit your own posts");
   }
 
-  if (!content || content.trim().length === 0) {
-    throw new Error("Post content is required");
+  const finalContent = content?.trim() || "";
+
+  if (!finalContent && existingUrls.length === 0 && newFiles.length === 0) {
+    throw new Error("Post content or an image is required");
   }
 
   const imageUrls: string[] = [...existingUrls];
@@ -611,7 +614,7 @@ export const editPost = async (formData: FormData) => {
 
   await db
     .update(posts)
-    .set({ content: content.trim(), images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null })
+    .set({ content: finalContent, images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null })
     .where(eq(posts.id, postId));
 
   return imageUrls;
