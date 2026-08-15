@@ -13,3 +13,10 @@ fixes:
 * use supabase ssr package
 <!-- * revokeObjectURL -->
 * protect Routes
+
+
+if i reply while the replies are shown, i don't see my reply added until I refresh the page
+
+non-member shouldn't be able to see access /groups/:id/post/:postId
+
+cancel join request button doesn't exist

@@ -4,6 +4,9 @@ import { PostsWrapper } from "./posts-wrapper";
 import { GroupActions } from "./leave-button";
 import { MembersList } from "./members-list";
 import { GroupSettingsDialog } from "./group-settings-dialog";
+import { auth } from "@/app/lib/auth";
+import { requireConfirmedHandle } from "@/app/lib/require-handle";
+import { headers } from "next/headers";
 import Image from "next/image";
 
 export default async function GroupPage({
@@ -12,6 +15,10 @@ export default async function GroupPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  const session = await auth.api.getSession({ headers: await headers() });
+  requireConfirmedHandle(session);
+
   const data = await getGroupPageData(id);
 
   if (!data) {
@@ -59,6 +66,9 @@ export default async function GroupPage({
           }
         >
           {org.name}
+          <span className="text-sm font-normal text-muted-foreground bg-amber-500/50   rounded-md px-2 py-1 ml-2">
+            {currentMember?.role === "admin" ? " admin" : ""}
+          </span>
         </h1>
         {metadata?.description && (
           <p className="mt-2 text-muted-foreground text-sm md:text-base">

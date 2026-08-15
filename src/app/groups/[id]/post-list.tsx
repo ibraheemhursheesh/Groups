@@ -8,11 +8,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Heart, MessageCircle, Share2 } from "lucide-react";
+import { MoreHorizontal, Heart, MessageCircle } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
 import { PostImages } from "./post-images";
 import { EditPostDialog } from "./edit-post-dialog";
+import { ShareDialog } from "./share-dialog";
 import { toggleLikePost } from "@/app/actions/groups";
+import { useRouter } from "next/navigation";
 
 const TRUNCATE_LENGTH = 300;
 
@@ -25,6 +27,12 @@ type Post = {
   images: string[];
   likeCount: number;
   hasLiked: boolean;
+  originalPostId: string | null;
+  origContent: string | null;
+  origImages: string[] | null;
+  origUserName: string | null;
+  origUserImage: string | null;
+  origCreatedAt: Date | null;
   createdAt: Date;
 };
 
@@ -35,6 +43,7 @@ export function PostList({
   groupId,
   onDelete,
   onEdit,
+  onShare,
   hasMore,
   loadingMore,
   onLoadMore,
@@ -45,10 +54,12 @@ export function PostList({
   groupId: string;
   onDelete: (postId: string) => void;
   onEdit: (postId: string, groupId: string, content: string, existingUrls: string[], newFiles: File[]) => Promise<void>;
+  onShare: (formData: FormData) => void;
   hasMore?: boolean;
   loadingMore?: boolean;
   onLoadMore?: () => void;
 }) {
+  const router = useRouter();
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [editingPost, setEditingPost] = useState<Post | null>(null);
@@ -114,7 +125,15 @@ export function PostList({
           const isOwner = post.userId === currentUserId;
 
           return (
-            <li key={post.id} className="overflow-hidden rounded-xl border">
+            <li
+              key={post.id}
+              className="overflow-hidden rounded-xl border cursor-pointer transition hover:border-primary/30"
+              onClick={(e) => {
+                const target = e.target as HTMLElement;
+                if (target.closest("button, a, [role='menu'], [role='dialog']")) return;
+                router.push(`/groups/${groupId}/post/${post.id}`);
+              }}
+            >
               <div className="flex items-center justify-between px-4 pt-4">
                 <div className="flex items-center gap-2">
                   {post.userImage ? (
@@ -155,17 +174,59 @@ export function PostList({
                 )}
               </div>
 
-              <p className="px-4 pb-4 pt-2 text-sm whitespace-pre-wrap">
-                {displayContent}
-                {post.content.length > TRUNCATE_LENGTH && (
-                  <button
-                    onClick={() => toggleExpand(post.id)}
-                    className="ml-1 text-primary hover:underline"
-                  >
-                    {truncated ? "Read more" : "Show less"}
-                  </button>
-                )}
-              </p>
+              {post.originalPostId ? (
+                <>
+                  {post.content && (
+                    <p className="px-4 pt-2 text-sm whitespace-pre-wrap">{post.content}</p>
+                  )}
+                  <div className="mx-4 mb-3 mt-2 rounded-lg border bg-muted/30 p-3">
+                    {post.origContent !== null ? (
+                      <>
+                        <div className="flex items-center gap-2 mb-2">
+                          {post.origUserImage ? (
+                            <img src={post.origUserImage} alt="" className="h-5 w-5 rounded-full object-cover" />
+                          ) : (
+                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px]">
+                              {(post.origUserName || "").charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {post.origUserName} · {post.origCreatedAt ? timeAgo(new Date(post.origCreatedAt)) : ""}
+                          </span>
+                        </div>
+                    {post.origContent && (
+                      <p className="text-sm whitespace-pre-wrap">{post.origContent}</p>
+                    )}
+                    {post.origImages && post.origImages.length > 0 && (
+                      <div className="mt-2">
+                        <PostImages images={post.origImages} />
+                      </div>
+                    )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">
+                        This post has been deleted.
+                      </p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div>
+                  {post.content && (
+                    <p className="px-4 pb-4 pt-2 text-sm whitespace-pre-wrap">
+                      {displayContent}
+                      {post.content.length > TRUNCATE_LENGTH && (
+                        <button
+                          onClick={() => toggleExpand(post.id)}
+                          className="ml-1 text-primary hover:underline"
+                        >
+                          {truncated ? "Read more" : "Show less"}
+                        </button>
+                      )}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <PostImages images={post.images} />
 
@@ -187,12 +248,30 @@ export function PostList({
                     </span>
                   )}
                 </button>
-                <button className="py-2 px-5 flex items-center gap-1.5 text-xs transition hover:text-blue-500 hover:bg-blue-100 rounded-md">
+                <button
+                  onClick={() => router.push(`/groups/${groupId}/post/${post.id}`)}
+                  className="py-2 px-5 flex items-center gap-1.5 text-xs transition hover:text-blue-500 hover:bg-blue-100 rounded-md"
+                >
                   <MessageCircle className="size-4" />
                 </button>
-                <button className="py-2 px-5 flex items-center gap-1.5 text-xs transition hover:text-green-500 hover:bg-green-100 rounded-md">
-                  <Share2 className="size-4" />
-                </button>
+                <ShareDialog
+                  originalPostId={post.originalPostId || post.id}
+                  originalPost={post.originalPostId ? {
+                    userName: post.origUserName ?? post.userName,
+                    userImage: post.origUserImage ?? post.userImage,
+                    content: post.origContent ?? post.content,
+                    images: post.origImages ?? post.images,
+                    createdAt: post.origCreatedAt ?? post.createdAt,
+                  } : {
+                    userName: post.userName,
+                    userImage: post.userImage,
+                    content: post.content,
+                    images: post.images,
+                    createdAt: post.createdAt,
+                  }}
+                  groupId={groupId}
+                  onShare={onShare}
+                />
               </div>
             </li>
           );

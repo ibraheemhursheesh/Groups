@@ -14,6 +14,7 @@ import {
   editPost,
   getApprovedPosts,
   handleJoinRequest,
+  sharePost,
 } from "@/app/actions/groups";
 
 type Post = {
@@ -25,6 +26,12 @@ type Post = {
   images: string[];
   likeCount: number;
   hasLiked: boolean;
+  originalPostId: string | null;
+  origContent: string | null;
+  origImages: string[] | null;
+  origUserName: string | null;
+  origUserImage: string | null;
+  origCreatedAt: Date | null;
   createdAt: Date;
 };
 
@@ -95,6 +102,12 @@ export function PostsWrapper({
           images: optimisticImageUrls,
           likeCount: 0,
           hasLiked: false,
+          originalPostId: null,
+          origContent: null,
+          origImages: null,
+          origUserName: null,
+          origUserImage: null,
+          origCreatedAt: null,
           createdAt: new Date(),
         },
         ...prev,
@@ -171,6 +184,52 @@ export function PostsWrapper({
     );
   };
 
+  const handleShare = (formData: FormData) => {
+    const originalPostId = formData.get("originalPostId") as string;
+    const content = (formData.get("content") as string) || "";
+    const origContent = formData.get("origContent") as string;
+    const origImagesJson = formData.get("origImages") as string;
+    const origImages = origImagesJson ? (JSON.parse(origImagesJson) as string[]) : [];
+    const origUserName = formData.get("origUserName") as string;
+    const origUserImage = formData.get("origUserImage") as string;
+    const origCreatedAtStr = formData.get("origCreatedAt") as string;
+
+    if (isAdmin) {
+      setApprovedPosts((prev) => [
+        {
+          id: `optimistic-${crypto.randomUUID()}`,
+          userId: currentUserId,
+          userName: currentUserName,
+          userImage: currentUserImage,
+          content,
+          images: [],
+          likeCount: 0,
+          hasLiked: false,
+          originalPostId,
+          origContent: origContent || null,
+          origImages: origImages.length > 0 ? origImages : null,
+          origUserName: origUserName || null,
+          origUserImage: origUserImage || null,
+          origCreatedAt: origCreatedAtStr ? new Date(origCreatedAtStr) : null,
+          createdAt: new Date(),
+        },
+        ...prev,
+      ]);
+    } else {
+      setMyPendingPosts((prev) => [
+        {
+          id: `optimistic-${crypto.randomUUID()}`,
+          content,
+          images: [],
+          createdAt: new Date(),
+        },
+        ...prev,
+      ]);
+    }
+
+    sharePost(formData);
+  };
+
   const handleApproveRequest = async (requestId: string) => {
     setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
     await handleJoinRequest(requestId, groupId, "approve");
@@ -231,6 +290,7 @@ export function PostsWrapper({
               groupId={groupId}
               onDelete={handleDelete}
               onEdit={handleEdit}
+              onShare={handleShare}
               hasMore={cursor !== null}
               loadingMore={loadingMore}
               onLoadMore={handleLoadMore}
@@ -270,6 +330,7 @@ export function PostsWrapper({
               groupId={groupId}
               onDelete={handleDelete}
               onEdit={handleEdit}
+              onShare={handleShare}
               hasMore={cursor !== null}
               loadingMore={loadingMore}
               onLoadMore={handleLoadMore}
@@ -293,8 +354,9 @@ export function PostsWrapper({
           currentUserId={currentUserId}
           isAdmin={isAdmin}
           groupId={groupId}
-          onDelete={handleDelete}
-          onEdit={handleEdit}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+              onShare={handleShare}
           hasMore={cursor !== null}
           loadingMore={loadingMore}
           onLoadMore={handleLoadMore}

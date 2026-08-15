@@ -72,7 +72,11 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
         <div className="mb-3 grid grid-cols-4 gap-1">
           {previews.map((src, i) => (
             <div key={i} className="relative overflow-hidden rounded-lg border">
-              <img src={src} alt="" className="aspect-square w-full object-cover" />
+              <img
+                src={src}
+                alt=""
+                className="aspect-square w-full object-cover"
+              />
               <button
                 type="button"
                 onClick={() => removePreview(i)}
@@ -84,29 +88,29 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
           ))}
         </div>
       )}
+      <div className="flex items-center gap-2">
+        {previews.length < MAX_IMAGES && (
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-dashed px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+          >
+            <ImageIcon className="size-3.5" />
+            Add images ({previews.length}/{MAX_IMAGES})
+          </button>
+        )}
 
-      {previews.length < MAX_IMAGES && (
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          className="mb-3 inline-flex items-center gap-1.5 rounded-lg border border-dashed px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary/40 hover:text-primary"
-        >
-          <ImageIcon className="size-3.5" />
-          Add images ({previews.length}/{MAX_IMAGES})
-        </button>
-      )}
-
-      <input
-        ref={fileRef}
-        name="images"
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handleFileChange}
-        className="hidden"
-      />
-
-      <Button type="submit">Post</Button>
+        <input
+          ref={fileRef}
+          name="images"
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        <Button type="submit">Post</Button>
+      </div>
     </form>
   );
 }

@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AccountSwitcher } from "@/components/account-switcher";
+import Link from "next/link";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -43,6 +44,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <Link href="/">Home</Link>
         <ThemeProvider>{children}</ThemeProvider>
         <div className="fixed right-4 top-4 z-50">
           <AccountSwitcher />

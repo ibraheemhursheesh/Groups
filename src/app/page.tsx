@@ -1,4 +1,3 @@
-import { getComments } from "@/app/actions/comments";
 import { signIn, signOut } from "@/app/actions/authen";
 import { auth } from "@/app/lib/auth";
 import { headers } from "next/headers";
@@ -7,6 +6,7 @@ import { GuestSignInButton } from "@/components/guest-sign-in-button";
 import { EmailSignInForm } from "@/components/email-sign-in-form";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { listAllGroups } from "@/app/actions/groups";
+import { requireConfirmedHandle } from "@/app/lib/require-handle";
 import Link from "next/link";
 
 function GoogleMark() {
@@ -105,6 +105,8 @@ export default async function Home({
       </main>
     );
   }
+
+  requireConfirmedHandle(session);
 
   return <Dashboard session={session} />;
 }

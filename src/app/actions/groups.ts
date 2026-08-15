@@ -103,6 +103,7 @@ export const getApprovedPosts = async (
         images: posts.images,
         createdAt: posts.createdAt,
         approvedAt: posts.approvedAt,
+        originalPostId: posts.originalPostId,
       })
       .from(posts)
       .where(and(...conditions))
@@ -112,6 +113,27 @@ export const getApprovedPosts = async (
 
   const hasMore = result.length > limit;
   const items = hasMore ? result.slice(0, limit) : result;
+
+  const sharedPostIds = items
+    .map((p) => p.originalPostId)
+    .filter((id): id is string => id !== null);
+
+  const origPosts = sharedPostIds.length > 0
+    ? await db
+        .select({
+          id: posts.id,
+          content: posts.content,
+          images: posts.images,
+          createdAt: posts.createdAt,
+          userName: user.name,
+          userImage: user.image,
+        })
+        .from(posts)
+        .leftJoin(user, eq(posts.userId, user.id))
+        .where(inArray(posts.id, sharedPostIds))
+    : [];
+
+  const origPostMap = new Map(origPosts.map((p) => [p.id, p]));
 
   const postIds = items.map((p) => p.id);
 
@@ -133,12 +155,20 @@ export const getApprovedPosts = async (
   const likeCountMap = new Map(likeCounts.map((l) => [l.postId, Number(l.count)]));
   const userLikeSet = new Set(userLikes.map((l) => l.postId));
 
-  const posts_list = (items as any[]).map((p) => ({
-    ...p,
-    images: parseImages(p.images),
-    likeCount: likeCountMap.get(p.id) ?? 0,
-    hasLiked: userLikeSet.has(p.id),
-  }));
+  const posts_list = (items as any[]).map((p) => {
+    const orig = p.originalPostId ? origPostMap.get(p.originalPostId) : null;
+    return {
+      ...p,
+      images: parseImages(p.images),
+      likeCount: likeCountMap.get(p.id) ?? 0,
+      hasLiked: userLikeSet.has(p.id),
+      origContent: orig?.content ?? p.origContent ?? null,
+      origImages: orig ? parseImages(orig.images) : (p.origImages ? parseImages(p.origImages) : null),
+      origUserName: orig?.userName ?? p.origUserName ?? null,
+      origUserImage: orig?.userImage ?? p.origUserImage ?? null,
+      origCreatedAt: orig?.createdAt ?? p.origCreatedAt ?? null,
+    };
+  });
   const nextCursor = hasMore
     ? (items[items.length - 1].approvedAt?.toISOString() ?? null)
     : null;
@@ -728,24 +758,36 @@ export const toggleLikePost = async (postId: string) => {
     throw new Error("Not authenticated");
   }
 
-  const [existing] = await db
-    .select()
-    .from(likes)
-    .where(and(eq(likes.postId, postId), eq(likes.userId, session.user.id)));
+  const userId = session.user.id;
 
-  if (existing) {
-    await db.delete(likes).where(eq(likes.id, existing.id));
-    return { liked: false, likeCount: await getLikeCount(postId) };
+  // Atomic toggle — no read-then-write window. The DELETE either claims the
+  // existing row or reports none (Postgres serializes concurrent deletes on the
+  // row lock), and the INSERT cannot duplicate thanks to the unique index on
+  // (post_id, user_id).
+  const deleted = await db
+    .delete(likes)
+    .where(and(eq(likes.postId, postId), eq(likes.userId, userId)))
+    .returning({ id: likes.id });
+
+  let liked: boolean;
+  if (deleted.length > 0) {
+    liked = false;
+  } else {
+    await db
+      .insert(likes)
+      .values({
+        id: crypto.randomUUID(),
+        postId,
+        userId,
+        createdAt: new Date(),
+      })
+      .onConflictDoNothing({ target: [likes.postId, likes.userId] });
+    // Either we inserted, or a concurrent request beat us to it. Either way a
+    // like row now exists for this user.
+    liked = true;
   }
 
-  await db.insert(likes).values({
-    id: crypto.randomUUID(),
-    postId,
-    userId: session.user.id,
-    createdAt: new Date(),
-  });
-
-  return { liked: true, likeCount: await getLikeCount(postId) };
+  return { liked, likeCount: await getLikeCount(postId) };
 };
 
 async function getLikeCount(postId: string): Promise<number> {
@@ -755,3 +797,83 @@ async function getLikeCount(postId: string): Promise<number> {
     .where(eq(likes.postId, postId));
   return Number(result?.count ?? 0);
 }
+
+export const sharePost = async (formData: FormData) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    throw new Error("Not authenticated");
+  }
+
+  const groupId = formData.get("groupId") as string;
+  const content = (formData.get("content") as string) || "";
+  const originalPostId = formData.get("originalPostId") as string;
+  const imageFiles = formData.getAll("images") as File[];
+  const hasImages = imageFiles.some((f) => f.size > 0);
+
+  if (!originalPostId) {
+    throw new Error("Missing original post");
+  }
+
+  const [original] = await db
+    .select()
+    .from(posts)
+    .where(eq(posts.id, originalPostId));
+
+  if (!original || original.status !== "approved") {
+    throw new Error("Original post not found");
+  }
+
+  const memberResult = await auth.api.getFullOrganization({
+    headers: await headers(),
+    query: { organizationId: groupId },
+  });
+
+  const currentMember = memberResult?.members.find(
+    (m) => m.userId === session.user.id,
+  );
+
+  if (!currentMember) {
+    throw new Error("Not a member");
+  }
+
+  const isAdmin = currentMember.role === "admin";
+  const postId = crypto.randomUUID();
+
+  const imageUrls: string[] = [];
+  for (let i = 0; i < imageFiles.length; i++) {
+    const file = imageFiles[i];
+    if (file && file.size > 0) {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${groupId}/posts/${postId}_s_${i}.${ext}`;
+      const uploadResult = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(path, file, {
+          contentType: file.type,
+          upsert: false,
+        });
+      if (!uploadResult.error) {
+        const { data } = supabase.storage
+          .from(STORAGE_BUCKET)
+          .getPublicUrl(path);
+        imageUrls.push(data.publicUrl);
+      }
+    }
+  }
+
+  await db.insert(posts).values({
+    id: postId,
+    groupId: original.groupId,
+    userId: session.user.id,
+    content: content.trim() || original.content,
+    images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
+    status: isAdmin ? "approved" : "pending",
+    createdAt: new Date(),
+    approvedAt: isAdmin ? new Date() : null,
+    originalPostId: original.originalPostId || original.id,
+  });
+
+  return postId;
+};

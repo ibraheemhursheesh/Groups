@@ -5,6 +5,7 @@ import { nextCookies } from "better-auth/next-js";
 import { organization as orgPlugin, anonymous, multiSession } from "better-auth/plugins";
 import { createAccessControl } from "better-auth/plugins/access";
 import { user, session, account, verification, organization, member as memberTable, invitation } from "@/db/schema";
+import { generateUniqueHandle } from "@/app/lib/handle-server";
 
 const ac = createAccessControl({
   member: ["create", "update", "delete"],
@@ -30,6 +31,41 @@ export const auth = betterAuth({
     schema: { user, session, account, verification, organization, member: memberTable, invitation },
   }),
   baseURL: process.env.BETTER_AUTH_URL,
+  user: {
+    additionalFields: {
+      // `input: false` keeps these out of the public signup payload — a handle
+      // may only be claimed through the validated `setHandle` server action.
+      handle: {
+        type: "string",
+        required: false,
+        input: false,
+      },
+      handleConfirmed: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+        input: false,
+      },
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        // Runs for every provider (Google, email/password, anonymous), so a
+        // user row can never exist without a handle. Users pick their real one
+        // afterwards at /onboarding/handle.
+        before: async (newUser) => {
+          const handle = await generateUniqueHandle({
+            email: newUser.email,
+            name: newUser.name,
+            isAnonymous: (newUser as { isAnonymous?: boolean | null })
+              .isAnonymous,
+          });
+          return { data: { ...newUser, handle, handleConfirmed: false } };
+        },
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
