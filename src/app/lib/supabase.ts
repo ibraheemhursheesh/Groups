@@ -29,3 +29,26 @@ export async function uploadGroupCover(file: File, groupId: string): Promise<str
 
   return data.publicUrl;
 }
+
+export async function uploadProfilePhoto(file: File, userId: string): Promise<string | null> {
+  const ext = file.name.split(".").pop() || "png";
+  const path = `profiles/${userId}/${crypto.randomUUID()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(path, file, {
+      contentType: file.type,
+      upsert: false,
+    });
+
+  if (error) {
+    console.error("Upload error:", error.message);
+    return null;
+  }
+
+  const { data } = supabase.storage
+    .from(STORAGE_BUCKET)
+    .getPublicUrl(path);
+
+  return data.publicUrl;
+}

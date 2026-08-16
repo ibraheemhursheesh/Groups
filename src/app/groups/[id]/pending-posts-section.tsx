@@ -7,6 +7,7 @@ type PendingPost = {
   id: string;
   userId: string;
   userName: string | null;
+  userHandle: string | null;
   userImage: string | null;
   content: string;
   images: string[];

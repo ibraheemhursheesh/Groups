@@ -60,7 +60,7 @@ export default async function PostPage({
   const commentsList = await getComments(postId);
 
   const [currentUserProfile] = await db
-    .select({ image: user.image, name: user.name })
+    .select({ image: user.image, name: user.name, handle: user.handle })
     .from(user)
     .where(eq(user.id, session.user.id));
 
@@ -81,6 +81,7 @@ export default async function PostPage({
       initialComments={commentsList}
       currentUserId={session.user.id}
       currentUserName={currentUserProfile?.name ?? null}
+      currentUserHandle={currentUserProfile?.handle ?? null}
       currentUserImage={currentUserProfile?.image ?? null}
     />
   );

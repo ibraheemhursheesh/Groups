@@ -14,6 +14,7 @@ type Comment = {
   postId: string;
   userId: string;
   userName: string | null;
+  userHandle: string | null;
   userImage: string | null;
   content: string;
   parentId: string | null;
@@ -28,6 +29,7 @@ type Post = {
   groupId: string;
   userId: string;
   userName: string | null;
+  userHandle: string | null;
   userImage: string | null;
   content: string;
   images: string[];
@@ -48,6 +50,7 @@ export function PostPageClient({
   initialComments,
   currentUserId,
   currentUserName,
+  currentUserHandle,
   currentUserImage,
 }: {
   groupId: string;
@@ -55,6 +58,7 @@ export function PostPageClient({
   initialComments: Comment[];
   currentUserId: string;
   currentUserName: string | null;
+  currentUserHandle: string | null;
   currentUserImage: string | null;
 }) {
   const [liked, setLiked] = useState(post.hasLiked);
@@ -82,6 +86,7 @@ export function PostPageClient({
       postId: post.id,
       userId: currentUserId,
       userName: currentUserName,
+      userHandle: currentUserHandle,
       userImage: currentUserImage,
       content: text,
       parentId: parentId || null,
@@ -155,7 +160,16 @@ export function PostPageClient({
             </div>
           )}
           <div>
-            <span className="text-sm font-medium">{post.userName || post.userId}</span>
+            {post.userHandle ? (
+              <a
+                href={`/profile/${post.userHandle}`}
+                className="text-sm font-medium hover:underline"
+              >
+                {post.userName || post.userId}
+              </a>
+            ) : (
+              <span className="text-sm font-medium">{post.userName || post.userId}</span>
+            )}
             <span className="ml-2 text-xs text-muted-foreground">
               {timeAgo(new Date(post.createdAt))}
             </span>

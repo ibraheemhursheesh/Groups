@@ -21,6 +21,7 @@ type Post = {
   id: string;
   userId: string;
   userName: string | null;
+  userHandle: string | null;
   userImage: string | null;
   content: string;
   images: string[];
@@ -46,6 +47,7 @@ type PendingRequest = {
   id: string;
   userId: string;
   userName: string | null;
+  userHandle: string | null;
   userImage: string | null;
   createdAt: Date;
 };
@@ -55,6 +57,7 @@ export function PostsWrapper({
   isAdmin,
   currentUserId,
   currentUserName,
+  currentUserHandle,
   currentUserImage,
   viewOnly = false,
   initialApprovedPosts,
@@ -67,6 +70,7 @@ export function PostsWrapper({
   isAdmin: boolean;
   currentUserId: string;
   currentUserName: string | null;
+  currentUserHandle: string | null;
   currentUserImage: string | null;
   viewOnly?: boolean;
   initialApprovedPosts: Post[];
@@ -97,6 +101,7 @@ export function PostsWrapper({
           id: optimisticId,
           userId: currentUserId,
           userName: currentUserName,
+          userHandle: currentUserHandle,
           userImage: currentUserImage,
           content: (formData.get("content") as string)?.trim() || "",
           images: optimisticImageUrls,
@@ -200,6 +205,7 @@ export function PostsWrapper({
           id: `optimistic-${crypto.randomUUID()}`,
           userId: currentUserId,
           userName: currentUserName,
+          userHandle: currentUserHandle,
           userImage: currentUserImage,
           content,
           images: [],

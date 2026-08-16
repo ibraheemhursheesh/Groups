@@ -22,6 +22,7 @@ type Post = {
   id: string;
   userId: string;
   userName: string | null;
+  userHandle: string | null;
   userImage: string | null;
   content: string;
   images: string[];
@@ -148,8 +149,18 @@ export function PostList({
                     </div>
                   )}
                   <span className="text-xs text-muted-foreground">
-                    {post.userName || post.userId} ·{" "}
-                    {timeAgo(new Date(post.createdAt))}
+                    {post.userHandle ? (
+                      <a
+                        href={`/profile/${post.userHandle}`}
+                        className="font-medium hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {post.userName || post.userId}
+                      </a>
+                    ) : (
+                      post.userName || post.userId
+                    )}{" "}
+                    · {timeAgo(new Date(post.createdAt))}
                   </span>
                 </div>
 

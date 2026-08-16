@@ -10,6 +10,7 @@ type Comment = {
   postId: string;
   userId: string;
   userName: string | null;
+  userHandle: string | null;
   userImage: string | null;
   content: string;
   parentId: string | null;
@@ -65,9 +66,18 @@ function CommentItem({
       )}
       <div className="min-w-0 flex-1">
         <div className="rounded-2xl bg-muted/50 px-3 py-2">
-          <span className="text-xs font-medium">
-            {comment.userName || comment.userId}
-          </span>
+          {comment.userHandle ? (
+            <a
+              href={`/profile/${comment.userHandle}`}
+              className="text-xs font-medium hover:underline"
+            >
+              {comment.userName || comment.userId}
+            </a>
+          ) : (
+            <span className="text-xs font-medium">
+              {comment.userName || comment.userId}
+            </span>
+          )}
           <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
         </div>
         <div className="mt-1 flex items-center gap-3 px-2 text-xs text-muted-foreground">
@@ -177,9 +187,18 @@ function CommentWithReplies({
 
       <div className="min-w-0 flex-1">
         <div className="rounded-2xl bg-muted/50 px-3 py-2">
-          <span className="text-xs font-medium">
-            {comment.userName || comment.userId}
-          </span>
+          {comment.userHandle ? (
+            <a
+              href={`/profile/${comment.userHandle}`}
+              className="text-xs font-medium hover:underline"
+            >
+              {comment.userName || comment.userId}
+            </a>
+          ) : (
+            <span className="text-xs font-medium">
+              {comment.userName || comment.userId}
+            </span>
+          )}
           <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
         </div>
         <div className="mt-1 flex items-center gap-3 px-2 text-xs text-muted-foreground">

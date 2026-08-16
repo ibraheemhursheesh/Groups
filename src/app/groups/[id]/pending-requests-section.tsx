@@ -6,6 +6,7 @@ type PendingRequest = {
   id: string;
   userId: string;
   userName: string | null;
+  userHandle: string | null;
   userImage: string | null;
   createdAt: Date;
 };

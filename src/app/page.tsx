@@ -114,15 +114,25 @@ export default async function Home({
 async function Dashboard({ session }: { session: any }) {
   const orgResult = await listAllGroups();
 
-  console.log(orgResult);
   const organizations = orgResult ?? [];
+  const handle = (session.user as { handle?: string }).handle;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">
-          Welcome, {session.user.name}
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Welcome, {session.user.name}
+          </h1>
+          {handle && (
+            <Link
+              href={`/profile/${handle}`}
+              className="text-sm text-muted-foreground transition hover:text-primary hover:underline"
+            >
+              @{handle}
+            </Link>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <CreateGroupDialog />

@@ -98,6 +98,7 @@ export const getApprovedPosts = async (
         id: posts.id,
         userId: posts.userId,
         userName: user.name,
+        userHandle: user.handle,
         userImage: user.image,
         content: posts.content,
         images: posts.images,
@@ -234,10 +235,11 @@ export const getGroupPageData = async (groupId: string) => {
 
   // Fetch the current user's full profile (including Google photo URL)
   const [currentUserProfile] = await db
-    .select({ image: user.image })
+    .select({ image: user.image, handle: user.handle })
     .from(user)
     .where(eq(user.id, session.user.id));
   const currentUserImage = currentUserProfile?.image ?? null;
+  const currentUserHandle = currentUserProfile?.handle ?? null;
 
   const [joinRequest] = currentMember
     ? []
@@ -319,6 +321,7 @@ export const getGroupPageData = async (groupId: string) => {
     organization: orgResult || org,
     currentMember: currentMember || null,
     currentUserImage,
+    currentUserHandle,
     joinRequest: joinRequest || null,
     pendingRequests,
     pendingPosts: (pendingPosts as any[]).map((p) => ({ ...p, images: parseImages(p.images) })),
