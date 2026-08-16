@@ -146,20 +146,20 @@ export function PostPageClient({
         Back
       </Link>
 
-      <div className="rounded-xl border">
+      <div className="">
         <div className="flex items-center gap-2 px-4 pt-4">
           {post.userImage ? (
             <img
               src={post.userImage}
               alt={post.userName || ""}
-              className="h-8 w-8 rounded-full object-cover"
+              className="h-10 w-10 rounded-full object-cover"
             />
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm text-muted-foreground">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-sm text-muted-foreground">
               {(post.userName || post.userId).charAt(0).toUpperCase()}
             </div>
           )}
-          <div>
+          <div className="flex flex-col">
             {post.userHandle ? (
               <a
                 href={`/profile/${post.userHandle}`}
@@ -168,9 +168,12 @@ export function PostPageClient({
                 {post.userName || post.userId}
               </a>
             ) : (
-              <span className="text-sm font-medium">{post.userName || post.userId}</span>
+              <span className="text-sm font-medium">
+                {post.userName || post.userId}
+              </span>
             )}
-            <span className="ml-2 text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
+              {post.userHandle && `@${post.userHandle} · `}
               {timeAgo(new Date(post.createdAt))}
             </span>
           </div>
@@ -179,25 +182,36 @@ export function PostPageClient({
         {post.originalPostId ? (
           <>
             {post.content && (
-              <p className="px-4 pt-3 text-sm whitespace-pre-wrap">{post.content}</p>
+              <p className="px-4 pt-3 text-sm whitespace-pre-wrap">
+                {post.content}
+              </p>
             )}
             <div className="mx-4 mb-3 mt-2 rounded-lg border bg-muted/30 p-3">
               {post.origContent !== null ? (
                 <>
                   <div className="mb-2 flex items-center gap-2">
                     {post.origUserImage ? (
-                      <img src={post.origUserImage} alt="" className="h-5 w-5 rounded-full object-cover" />
+                      <img
+                        src={post.origUserImage}
+                        alt=""
+                        className="h-10 w-10 rounded-full object-cover"
+                      />
                     ) : (
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px]">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
                         {(post.origUserName || "").charAt(0).toUpperCase()}
                       </div>
                     )}
                     <span className="text-xs text-muted-foreground">
-                      {post.origUserName} · {post.origCreatedAt ? timeAgo(new Date(post.origCreatedAt)) : ""}
+                      {post.origUserName} ·{" "}
+                      {post.origCreatedAt
+                        ? timeAgo(new Date(post.origCreatedAt))
+                        : ""}
                     </span>
                   </div>
                   {post.origContent && (
-                    <p className="text-sm whitespace-pre-wrap">{post.origContent}</p>
+                    <p className="text-sm whitespace-pre-wrap">
+                      {post.origContent}
+                    </p>
                   )}
                   {post.origImages && post.origImages.length > 0 && (
                     <div className="mt-2">
@@ -206,14 +220,18 @@ export function PostPageClient({
                   )}
                 </>
               ) : (
-                <p className="text-sm italic text-muted-foreground">This post has been deleted.</p>
+                <p className="text-sm italic text-muted-foreground">
+                  This post has been deleted.
+                </p>
               )}
             </div>
           </>
         ) : (
           <>
             {post.content && (
-              <p className="px-4 pb-4 pt-3 text-sm whitespace-pre-wrap">{post.content}</p>
+              <p className="px-4 pb-4 pt-3 text-sm md:text-base whitespace-pre-wrap">
+                {post.content}
+              </p>
             )}
           </>
         )}
@@ -225,7 +243,9 @@ export function PostPageClient({
             onClick={handleLike}
             className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs transition hover:bg-red-100 hover:text-red-500"
           >
-            <Heart className={`size-4 ${liked ? "fill-red-500 text-red-500" : ""}`} />
+            <Heart
+              className={`size-4 ${liked ? "fill-red-500 text-red-500" : ""}`}
+            />
             {likeCount > 0 && <span>{likeCount}</span>}
           </button>
           <div className="flex items-center gap-1.5 text-xs">
@@ -238,7 +258,9 @@ export function PostPageClient({
       <div className="mt-6">
         <h3 className="mb-4 text-sm font-semibold">Comments</h3>
         {commentsList.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">No comments yet.</p>
+          <p className="py-4 text-center text-sm text-muted-foreground">
+            No comments yet.
+          </p>
         ) : (
           <CommentList
             comments={commentsList}
@@ -252,7 +274,11 @@ export function PostPageClient({
       <div className="fixed inset-x-0 bottom-0 border-t bg-background p-3">
         <div className="mx-auto flex max-w-3xl items-center gap-2">
           {currentUserImage ? (
-            <img src={currentUserImage} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+            <img
+              src={currentUserImage}
+              alt=""
+              className="h-8 w-8 shrink-0 rounded-full object-cover"
+            />
           ) : (
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs">
               {(currentUserName || "U").charAt(0).toUpperCase()}
@@ -281,7 +307,11 @@ export function PostPageClient({
                   handleSubmitComment();
                 }
               }}
-              placeholder={replyingTo ? `Reply to ${replyingTo.userName}...` : "Write a comment..."}
+              placeholder={
+                replyingTo
+                  ? `Reply to ${replyingTo.userName}...`
+                  : "Write a comment..."
+              }
               className="h-10 w-full rounded-full border bg-muted/50 px-4 text-sm outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/50"
             />
           </div>

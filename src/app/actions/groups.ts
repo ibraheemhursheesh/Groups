@@ -471,8 +471,28 @@ export const deleteGroup = async (groupId: string) => {
     throw new Error("Not authenticated");
   }
 
+  const groupPosts = await db
+    .select({ images: posts.images })
+    .from(posts)
+    .where(eq(posts.groupId, groupId));
+
+  const bucketPrefix = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
+  const allPaths: string[] = [];
+  for (const p of groupPosts) {
+    if (!p.images) continue;
+    const imageUrls: string[] = JSON.parse(p.images);
+    for (const url of imageUrls) {
+      const idx = url.indexOf(bucketPrefix);
+      if (idx !== -1) allPaths.push(url.slice(idx + bucketPrefix.length));
+    }
+  }
+
   await db.delete(posts).where(eq(posts.groupId, groupId));
   await db.delete(joinRequests).where(eq(joinRequests.groupId, groupId));
+
+  if (allPaths.length > 0) {
+    await supabase.storage.from(STORAGE_BUCKET).remove(allPaths);
+  }
 
   await auth.api.deleteOrganization({
     headers: await headers(),
@@ -579,6 +599,21 @@ export const handlePostApproval = async (postId: string, groupId: string, action
       .where(eq(posts.id, postId));
   } else {
     await db.delete(posts).where(eq(posts.id, postId));
+
+    if (post.images) {
+      const imageUrls: string[] = JSON.parse(post.images);
+      const bucketPrefix = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
+      const storagePaths = imageUrls
+        .map((url) => {
+          const idx = url.indexOf(bucketPrefix);
+          return idx !== -1 ? url.slice(idx + bucketPrefix.length) : null;
+        })
+        .filter((p): p is string => p !== null);
+
+      if (storagePaths.length > 0) {
+        await supabase.storage.from(STORAGE_BUCKET).remove(storagePaths);
+      }
+    }
   }
 };
 
@@ -591,9 +626,29 @@ export const deletePost = async (postId: string, groupId: string) => {
     throw new Error("Not authenticated");
   }
 
+  const [post] = await db
+    .select({ images: posts.images })
+    .from(posts)
+    .where(and(eq(posts.id, postId), eq(posts.groupId, groupId)));
+
   await db.delete(posts).where(
     and(eq(posts.id, postId), eq(posts.groupId, groupId)),
   );
+
+  if (post?.images) {
+    const imageUrls: string[] = JSON.parse(post.images);
+    const bucketPrefix = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
+    const storagePaths = imageUrls
+      .map((url) => {
+        const idx = url.indexOf(bucketPrefix);
+        return idx !== -1 ? url.slice(idx + bucketPrefix.length) : null;
+      })
+      .filter((p): p is string => p !== null);
+
+    if (storagePaths.length > 0) {
+      await supabase.storage.from(STORAGE_BUCKET).remove(storagePaths);
+    }
+  }
 };
 
 export const kickMember = async (memberId: string, groupId: string) => {

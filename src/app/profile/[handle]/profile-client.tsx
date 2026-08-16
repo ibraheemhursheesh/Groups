@@ -40,6 +40,17 @@ export function ProfileClient({
 
   const displayImage = previewUrl ?? profile.image;
 
+  // Once the server refresh delivers the new image URL, the blob preview
+  // is no longer needed. This bridges the gap without a flash.
+  const prevServerImage = useRef(profile.image);
+  if (prevServerImage.current !== profile.image) {
+    prevServerImage.current = profile.image;
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+  }
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -66,7 +77,8 @@ export function ProfileClient({
       }
       setEditing(false);
       selectedFileRef.current = null;
-      setPreviewUrl(null);
+      // Keep previewUrl — it shows the correct image while router.refresh()
+      // fetches the new server URL. Cleared above when profile.image updates.
       router.refresh();
     } catch {
       setError("Something went wrong.");

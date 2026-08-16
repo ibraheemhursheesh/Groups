@@ -109,7 +109,9 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
           onChange={handleFileChange}
           className="hidden"
         />
-        <Button type="submit">Post</Button>
+        <Button type="submit" className="p-5 text-base">
+          Post
+        </Button>
       </div>
     </form>
   );

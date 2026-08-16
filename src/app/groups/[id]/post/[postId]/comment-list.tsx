@@ -5,6 +5,8 @@ import { ChevronDown } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
 import { toggleLikeComment, getReplies } from "@/app/actions/comments";
 
+const AVATAR_SIZE = "size-10";
+
 type Comment = {
   id: string;
   postId: string;
@@ -24,12 +26,10 @@ function CommentItem({
   comment,
   currentUserId,
   onReply,
-  isReply = false,
 }: {
   comment: Comment;
   currentUserId: string;
   onReply: (commentId: string, userName: string) => void;
-  isReply?: boolean;
 }) {
   const [liked, setLiked] = useState(comment.hasLiked);
   const [likeCount, setLikeCount] = useState(comment.likeCount);
@@ -55,29 +55,36 @@ function CommentItem({
         <img
           src={comment.userImage}
           alt={comment.userName || ""}
-          className={`${isReply ? "h-6 w-6" : "h-8 w-8"} shrink-0 rounded-full object-cover`}
+          className={`${AVATAR_SIZE} shrink-0 rounded-full object-cover`}
         />
       ) : (
         <div
-          className={`flex ${isReply ? "h-6 w-6 text-[10px]" : "h-8 w-8 text-xs"} shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground`}
+          className={`flex ${AVATAR_SIZE} shrink-0 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground`}
         >
           {(comment.userName || comment.userId).charAt(0).toUpperCase()}
         </div>
       )}
       <div className="min-w-0 flex-1">
         <div className="rounded-2xl bg-muted/50 px-3 py-2">
-          {comment.userHandle ? (
-            <a
-              href={`/profile/${comment.userHandle}`}
-              className="text-xs font-medium hover:underline"
-            >
-              {comment.userName || comment.userId}
-            </a>
-          ) : (
-            <span className="text-xs font-medium">
-              {comment.userName || comment.userId}
-            </span>
-          )}
+          <div className="flex items-baseline gap-1.5">
+            {comment.userHandle ? (
+              <a
+                href={`/profile/${comment.userHandle}`}
+                className="text-xs font-medium hover:underline"
+              >
+                {comment.userName || comment.userId}
+              </a>
+            ) : (
+              <span className="text-xs font-medium">
+                {comment.userName || comment.userId}
+              </span>
+            )}
+            {comment.userHandle && (
+              <span className="text-[11px] text-muted-foreground">
+                @{comment.userHandle}
+              </span>
+            )}
+          </div>
           <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
         </div>
         <div className="mt-1 flex items-center gap-3 px-2 text-xs text-muted-foreground">
@@ -175,30 +182,39 @@ function CommentWithReplies({
           <img
             src={comment.userImage}
             alt={comment.userName || ""}
-            className="h-8 w-8 shrink-0 rounded-full object-cover"
+            className={`${AVATAR_SIZE} shrink-0 rounded-full object-cover`}
           />
         ) : (
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
+          <div
+            className={`flex ${AVATAR_SIZE} shrink-0 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground`}
+          >
             {(comment.userName || comment.userId).charAt(0).toUpperCase()}
           </div>
         )}
-        {repliesVisible && <div className="mt-1 w-0.5 flex-1 bg-border" />}
+        {repliesVisible && <div className="mt-1 w-0.75 flex-1 bg-border" />}
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="rounded-2xl bg-muted/50 px-3 py-2">
-          {comment.userHandle ? (
-            <a
-              href={`/profile/${comment.userHandle}`}
-              className="text-xs font-medium hover:underline"
-            >
-              {comment.userName || comment.userId}
-            </a>
-          ) : (
-            <span className="text-xs font-medium">
-              {comment.userName || comment.userId}
-            </span>
-          )}
+          <div className="flex items-baseline gap-1.5">
+            {comment.userHandle ? (
+              <a
+                href={`/profile/${comment.userHandle}`}
+                className="text-xs font-medium hover:underline"
+              >
+                {comment.userName || comment.userId}
+              </a>
+            ) : (
+              <span className="text-xs font-medium">
+                {comment.userName || comment.userId}
+              </span>
+            )}
+            {comment.userHandle && (
+              <span className="text-[11px] text-muted-foreground">
+                @{comment.userHandle}
+              </span>
+            )}
+          </div>
           <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
         </div>
         <div className="mt-1 flex items-center gap-3 px-2 text-xs text-muted-foreground">
@@ -243,18 +259,17 @@ function CommentWithReplies({
               const isLast = i === mergedReplies.length - 1;
               return (
                 <div key={reply.id} className="relative pb-3 last:pb-0">
-                  <div className="absolute -left-[27px] top-0 h-3.5 w-[27px] rounded-bl-xl border-b-2 border-l-2 border-border" />
+                  <div className="absolute -left-[31px] top-0 h-5 w-[30px] rounded-bl-xl border-b-3 border-l-3 border-border" />
                   {!isLast && (
-                    <div className="absolute -left-[27px] top-3.5 bottom-0 w-0.5 bg-border" />
+                    <div className="absolute -left-[31px] top-5 bottom-0 w-0.75 bg-border" />
                   )}
                   {isLast && (
-                    <div className="absolute -left-[27px] top-3.5 bottom-0 z-10 w-2 bg-background" />
+                    <div className="absolute -left-[32px] top-5 bottom-0 z-10 w-2 bg-background" />
                   )}
                   <CommentItem
                     comment={reply}
                     currentUserId={currentUserId}
                     onReply={onReply}
-                    isReply
                   />
                 </div>
               );
