@@ -32,7 +32,7 @@ export function VaulDrawer({ open, onOpenChange, trigger, children }: VaulDrawer
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-50 bg-black/40" />
         <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 mt-24 flex h-150 flex-col rounded-t-[10px] bg-background outline-none">
-          <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
+          <Drawer.Handle className="mt-4 bg-muted" />
           <div className="overflow-y-auto p-4">{children}</div>
         </Drawer.Content>
       </Drawer.Portal>

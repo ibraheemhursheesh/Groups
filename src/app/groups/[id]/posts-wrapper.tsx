@@ -93,7 +93,15 @@ export function PostsWrapper({
     const optimisticImageUrls = imageFiles
       .filter((f) => f.size > 0)
       .map((f) => URL.createObjectURL(f));
-    const optimisticId = `optimistic-${crypto.randomUUID()}`;
+    const optimisticId = `optimistic-${crypto
+      .getRandomValues(new Uint8Array(16))
+      .reduce(
+        (s, b, i) =>
+          s +
+          (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+          b.toString(16).padStart(2, "0"),
+        "",
+      )}`;
 
     if (isAdmin) {
       setApprovedPosts((prev) => [
@@ -194,7 +202,9 @@ export function PostsWrapper({
     const content = (formData.get("content") as string) || "";
     const origContent = formData.get("origContent") as string;
     const origImagesJson = formData.get("origImages") as string;
-    const origImages = origImagesJson ? (JSON.parse(origImagesJson) as string[]) : [];
+    const origImages = origImagesJson
+      ? (JSON.parse(origImagesJson) as string[])
+      : [];
     const origUserName = formData.get("origUserName") as string;
     const origUserImage = formData.get("origUserImage") as string;
     const origCreatedAtStr = formData.get("origCreatedAt") as string;
@@ -202,7 +212,15 @@ export function PostsWrapper({
     if (isAdmin) {
       setApprovedPosts((prev) => [
         {
-          id: `optimistic-${crypto.randomUUID()}`,
+          id: `optimistic-${crypto
+            .getRandomValues(new Uint8Array(16))
+            .reduce(
+              (s, b, i) =>
+                s +
+                (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+                b.toString(16).padStart(2, "0"),
+              "",
+            )}`,
           userId: currentUserId,
           userName: currentUserName,
           userHandle: currentUserHandle,
@@ -224,7 +242,15 @@ export function PostsWrapper({
     } else {
       setMyPendingPosts((prev) => [
         {
-          id: `optimistic-${crypto.randomUUID()}`,
+          id: `optimistic-${crypto
+            .getRandomValues(new Uint8Array(16))
+            .reduce(
+              (s, b, i) =>
+                s +
+                (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+                b.toString(16).padStart(2, "0"),
+              "",
+            )}`,
           content,
           images: [],
           createdAt: new Date(),

@@ -9,7 +9,15 @@ export const STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET!;
 
 export async function uploadGroupCover(file: File, groupId: string): Promise<string | null> {
   const ext = file.name.split(".").pop() || "png";
-  const path = `${groupId}/${crypto.randomUUID()}.${ext}`;
+  const path = `${groupId}/${crypto
+    .getRandomValues(new Uint8Array(16))
+    .reduce(
+      (s, b, i) =>
+        s +
+        (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+        b.toString(16).padStart(2, "0"),
+      "",
+    )}.${ext}`;
 
   const { error } = await supabase.storage
     .from(STORAGE_BUCKET)
@@ -32,7 +40,15 @@ export async function uploadGroupCover(file: File, groupId: string): Promise<str
 
 export async function uploadProfilePhoto(file: File, userId: string): Promise<string | null> {
   const ext = file.name.split(".").pop() || "png";
-  const path = `profiles/${userId}/${crypto.randomUUID()}.${ext}`;
+  const path = `profiles/${userId}/${crypto
+    .getRandomValues(new Uint8Array(16))
+    .reduce(
+      (s, b, i) =>
+        s +
+        (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+        b.toString(16).padStart(2, "0"),
+      "",
+    )}.${ext}`;
 
   const { error } = await supabase.storage
     .from(STORAGE_BUCKET)

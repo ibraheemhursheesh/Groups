@@ -11,7 +11,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, LoaderCircleIcon } from "lucide-react";
+import imageCompression from "browser-image-compression";
+
+const COMPRESSION_OPTIONS = {
+  maxSizeMB: 0.3,
+  maxWidthOrHeight: 1280,
+  initialQuality: 0.7,
+  useWebWorker: true,
+};
 
 const MAX_IMAGES = 10;
 
@@ -65,17 +73,28 @@ export function EditPostDialog({
     }
   }, [open, initialContent, initialImages]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [compressing, setCompressing] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (images.length + files.length > MAX_IMAGES) return;
+
     const newItems: ImageItem[] = files.map((f) => {
       const url = URL.createObjectURL(f);
       objectUrlsRef.current.push(url);
-      newFilesRef.current.set(url, f);
       return { url, isExisting: false };
     });
     setImages((prev) => [...prev, ...newItems]);
     if (fileRef.current) fileRef.current.value = "";
+
+    setCompressing(true);
+    const compressed = await Promise.all(
+      files.map((f) => imageCompression(f, COMPRESSION_OPTIONS)),
+    );
+    newItems.forEach((item, i) => {
+      newFilesRef.current.set(item.url, compressed[i]);
+    });
+    setCompressing(false);
   };
 
   const removeImage = (index: number) => {
@@ -163,8 +182,9 @@ export function EditPostDialog({
         </div>
 
         <DialogFooter>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save"}
+          <Button onClick={handleSave} disabled={saving || compressing}>
+            {(saving || compressing) && <LoaderCircleIcon className="size-4 animate-spin" />}
+            {saving ? "Saving..." : compressing ? "Compressing..." : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>

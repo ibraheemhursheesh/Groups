@@ -16,6 +16,7 @@ import { EditPostDialog } from "./edit-post-dialog";
 import { ShareDialog } from "./share-dialog";
 import { toggleLikePost } from "@/app/actions/groups";
 import { useRouter } from "next/navigation";
+import { MentionContent } from "@/components/mention-content";
 
 const TRUNCATE_LENGTH = 300;
 
@@ -215,7 +216,7 @@ export function PostList({
                     {post.originalPostId ? (
                       <>
                         {post.content && (
-                          <p className="px-4 pt-2 text-sm whitespace-pre-wrap">{post.content}</p>
+                          <p className="px-4 pt-2 text-sm whitespace-pre-wrap"><MentionContent content={post.content} /></p>
                         )}
                         <div className="mx-4 mb-3 mt-2 rounded-lg border bg-muted/30 p-3">
                           {post.origContent !== null ? (
@@ -233,7 +234,7 @@ export function PostList({
                                 </span>
                               </div>
                               {post.origContent && (
-                                <p className="text-sm whitespace-pre-wrap">{post.origContent}</p>
+                                <p className="text-sm whitespace-pre-wrap"><MentionContent content={post.origContent} /></p>
                               )}
                               {post.origImages && post.origImages.length > 0 && (
                                 <div className="mt-2">
@@ -252,7 +253,7 @@ export function PostList({
                       <div>
                         {post.content && (
                           <p className="px-4 pb-4 pt-2 text-sm whitespace-pre-wrap">
-                            {displayContent}
+                            <MentionContent content={displayContent} />
                             {post.content.length > TRUNCATE_LENGTH && (
                               <button
                                 onClick={() => toggleExpand(post.id)}

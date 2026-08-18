@@ -190,7 +190,15 @@ export async function createComment(
     }
   }
 
-  const id = crypto.randomUUID();
+  const id = crypto
+    .getRandomValues(new Uint8Array(16))
+    .reduce(
+      (s, b, i) =>
+        s +
+        (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+        b.toString(16).padStart(2, "0"),
+      "",
+    );
   await db.insert(comments).values({
     id,
     postId,
@@ -246,7 +254,15 @@ export async function toggleLikeComment(commentId: string) {
     await db
       .insert(commentLikes)
       .values({
-        id: crypto.randomUUID(),
+        id: crypto
+          .getRandomValues(new Uint8Array(16))
+          .reduce(
+            (s, b, i) =>
+              s +
+              (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+              b.toString(16).padStart(2, "0"),
+            "",
+          ),
         commentId,
         userId,
         createdAt: new Date(),

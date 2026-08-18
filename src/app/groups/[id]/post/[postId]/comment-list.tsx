@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
 import { toggleLikeComment, getReplies } from "@/app/actions/comments";
+import { MentionContent } from "@/components/mention-content";
 
 const AVATAR_SIZE = "size-10";
 
@@ -85,7 +86,7 @@ function CommentItem({
               </span>
             )}
           </div>
-          <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+          <p className="text-sm whitespace-pre-wrap"><MentionContent content={comment.content} /></p>
         </div>
         <div className="mt-1 flex items-center gap-3 px-2 text-xs text-muted-foreground">
           <span>{timeAgo(new Date(comment.createdAt))}</span>
@@ -215,7 +216,7 @@ function CommentWithReplies({
               </span>
             )}
           </div>
-          <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+          <p className="text-sm whitespace-pre-wrap"><MentionContent content={comment.content} /></p>
         </div>
         <div className="mt-1 flex items-center gap-3 px-2 text-xs text-muted-foreground">
           <span>{timeAgo(new Date(comment.createdAt))}</span>

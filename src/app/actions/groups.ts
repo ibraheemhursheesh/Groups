@@ -3,7 +3,7 @@
 import { auth } from "@/app/lib/auth";
 import { db } from "@/index";
 import { joinRequests, posts, user, organization, member as memberTable, likes } from "@/db/schema";
-import { eq, and, desc, lt, count, inArray } from "drizzle-orm";
+import { eq, and, desc, lt, count, inArray, like } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { uploadGroupCover, supabase, STORAGE_BUCKET } from "@/app/lib/supabase";
@@ -25,8 +25,15 @@ export const createGroup = async (formData: FormData) => {
     throw new Error("Group name is required");
   }
 
-  const groupId = crypto.randomUUID();
-
+  const groupId = crypto
+    .getRandomValues(new Uint8Array(16))
+    .reduce(
+      (s, b, i) =>
+        s +
+        (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+        b.toString(16).padStart(2, "0"),
+      "",
+    );
   let logo: string | undefined;
   if (coverFile && coverFile.size > 0) {
     logo = (await uploadGroupCover(coverFile, groupId)) ?? undefined;
@@ -35,7 +42,19 @@ export const createGroup = async (formData: FormData) => {
   const result = await auth.api.createOrganization({
     body: {
       name: name.trim(),
-      slug: name.trim().toLowerCase().replace(/\s+/g, "-") + "-" + crypto.randomUUID().slice(0, 8),
+      slug:
+        name.trim().toLowerCase().replace(/\s+/g, "-") +
+        "-" +
+        crypto
+          .getRandomValues(new Uint8Array(16))
+          .reduce(
+            (s, b, i) =>
+              s +
+              (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+              b.toString(16).padStart(2, "0"),
+            "",
+          )
+          .slice(0, 8),
       logo,
       metadata: { description: description?.trim() || "" },
       userId: session.user.id,
@@ -58,7 +77,10 @@ export const listAllGroups = async () => {
     throw new Error("Not authenticated");
   }
 
-  const allOrgs = await db.select().from(organization).orderBy(desc(organization.createdAt));
+  const allOrgs = await db
+    .select()
+    .from(organization)
+    .orderBy(desc(organization.createdAt));
 
   const memberships = await db
     .select({ organizationId: memberTable.organizationId })
@@ -93,24 +115,24 @@ export const getApprovedPosts = async (
     conditions.push(lt(posts.approvedAt, cursorDate));
   }
 
-    const result = await db
-      .select({
-        id: posts.id,
-        userId: posts.userId,
-        userName: user.name,
-        userHandle: user.handle,
-        userImage: user.image,
-        content: posts.content,
-        images: posts.images,
-        createdAt: posts.createdAt,
-        approvedAt: posts.approvedAt,
-        originalPostId: posts.originalPostId,
-      })
-      .from(posts)
-      .where(and(...conditions))
-      .leftJoin(user, eq(posts.userId, user.id))
-      .orderBy(desc(posts.approvedAt))
-      .limit(limit + 1);
+  const result = await db
+    .select({
+      id: posts.id,
+      userId: posts.userId,
+      userName: user.name,
+      userHandle: user.handle,
+      userImage: user.image,
+      content: posts.content,
+      images: posts.images,
+      createdAt: posts.createdAt,
+      approvedAt: posts.approvedAt,
+      originalPostId: posts.originalPostId,
+    })
+    .from(posts)
+    .where(and(...conditions))
+    .leftJoin(user, eq(posts.userId, user.id))
+    .orderBy(desc(posts.approvedAt))
+    .limit(limit + 1);
 
   const hasMore = result.length > limit;
   const items = hasMore ? result.slice(0, limit) : result;
@@ -119,41 +141,51 @@ export const getApprovedPosts = async (
     .map((p) => p.originalPostId)
     .filter((id): id is string => id !== null);
 
-  const origPosts = sharedPostIds.length > 0
-    ? await db
-        .select({
-          id: posts.id,
-          content: posts.content,
-          images: posts.images,
-          createdAt: posts.createdAt,
-          userName: user.name,
-          userImage: user.image,
-        })
-        .from(posts)
-        .leftJoin(user, eq(posts.userId, user.id))
-        .where(inArray(posts.id, sharedPostIds))
-    : [];
+  const origPosts =
+    sharedPostIds.length > 0
+      ? await db
+          .select({
+            id: posts.id,
+            content: posts.content,
+            images: posts.images,
+            createdAt: posts.createdAt,
+            userName: user.name,
+            userImage: user.image,
+          })
+          .from(posts)
+          .leftJoin(user, eq(posts.userId, user.id))
+          .where(inArray(posts.id, sharedPostIds))
+      : [];
 
   const origPostMap = new Map(origPosts.map((p) => [p.id, p]));
 
   const postIds = items.map((p) => p.id);
 
-  const likeCounts = postIds.length > 0
-    ? await db
-        .select({ postId: likes.postId, count: count() })
-        .from(likes)
-        .where(inArray(likes.postId, postIds))
-        .groupBy(likes.postId)
-    : [];
+  const likeCounts =
+    postIds.length > 0
+      ? await db
+          .select({ postId: likes.postId, count: count() })
+          .from(likes)
+          .where(inArray(likes.postId, postIds))
+          .groupBy(likes.postId)
+      : [];
 
-  const userLikes = postIds.length > 0
-    ? await db
-        .select({ postId: likes.postId })
-        .from(likes)
-        .where(and(eq(likes.userId, session.user.id), inArray(likes.postId, postIds)))
-    : [];
+  const userLikes =
+    postIds.length > 0
+      ? await db
+          .select({ postId: likes.postId })
+          .from(likes)
+          .where(
+            and(
+              eq(likes.userId, session.user.id),
+              inArray(likes.postId, postIds),
+            ),
+          )
+      : [];
 
-  const likeCountMap = new Map(likeCounts.map((l) => [l.postId, Number(l.count)]));
+  const likeCountMap = new Map(
+    likeCounts.map((l) => [l.postId, Number(l.count)]),
+  );
   const userLikeSet = new Set(userLikes.map((l) => l.postId));
 
   const posts_list = (items as any[]).map((p) => {
@@ -164,7 +196,11 @@ export const getApprovedPosts = async (
       likeCount: likeCountMap.get(p.id) ?? 0,
       hasLiked: userLikeSet.has(p.id),
       origContent: orig?.content ?? p.origContent ?? null,
-      origImages: orig ? parseImages(orig.images) : (p.origImages ? parseImages(p.origImages) : null),
+      origImages: orig
+        ? parseImages(orig.images)
+        : p.origImages
+          ? parseImages(p.origImages)
+          : null,
       origUserName: orig?.userName ?? p.origUserName ?? null,
       origUserImage: orig?.userImage ?? p.origUserImage ?? null,
       origCreatedAt: orig?.createdAt ?? p.origCreatedAt ?? null,
@@ -286,9 +322,10 @@ export const getGroupPageData = async (groupId: string) => {
       : [];
 
   // Use getApprovedPosts for the initial page to get cursor-based pagination
-  const { posts: approvedPosts, nextCursor } = currentMember || isPublicGroup
-    ? await getApprovedPosts(groupId, undefined, 10)
-    : { posts: [], nextCursor: null };
+  const { posts: approvedPosts, nextCursor } =
+    currentMember || isPublicGroup
+      ? await getApprovedPosts(groupId, undefined, 10)
+      : { posts: [], nextCursor: null };
 
   const myPendingPosts = currentMember
     ? await db
@@ -324,13 +361,19 @@ export const getGroupPageData = async (groupId: string) => {
     currentUserHandle,
     joinRequest: joinRequest || null,
     pendingRequests,
-    pendingPosts: (pendingPosts as any[]).map((p) => ({ ...p, images: parseImages(p.images) })),
+    pendingPosts: (pendingPosts as any[]).map((p) => ({
+      ...p,
+      images: parseImages(p.images),
+    })),
     approvedPosts,
     approvedNextCursor: nextCursor,
-    myPendingPosts: (myPendingPosts as any[]).map((p) => ({ ...p, images: parseImages(p.images) })),
+    myPendingPosts: (myPendingPosts as any[]).map((p) => ({
+      ...p,
+      images: parseImages(p.images),
+    })),
     members: allMembers,
   };
-};;;;
+};
 
 export const requestToJoin = async (groupId: string) => {
   const session = await auth.api.getSession({
@@ -377,7 +420,15 @@ export const requestToJoin = async (groupId: string) => {
     });
   } else {
     await db.insert(joinRequests).values({
-      id: crypto.randomUUID(),
+      id: crypto
+        .getRandomValues(new Uint8Array(16))
+        .reduce(
+          (s, b, i) =>
+            s +
+            (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+            b.toString(16).padStart(2, "0"),
+          "",
+        ),
       groupId,
       userId: session.user.id,
       createdAt: new Date(),
@@ -385,7 +436,11 @@ export const requestToJoin = async (groupId: string) => {
   }
 };
 
-export const handleJoinRequest = async (requestId: string, groupId: string, action: "approve" | "reject") => {
+export const handleJoinRequest = async (
+  requestId: string,
+  groupId: string,
+  action: "approve" | "reject",
+) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -537,7 +592,15 @@ export const createPost = async (formData: FormData) => {
 
   const isAdmin = currentMember.role === "admin";
 
-  const postId = crypto.randomUUID();
+  const postId = crypto
+    .getRandomValues(new Uint8Array(16))
+    .reduce(
+      (s, b, i) =>
+        s +
+        (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+        b.toString(16).padStart(2, "0"),
+      "",
+    );
   const imageUrls: string[] = [];
 
   for (let i = 0; i < imageFiles.length; i++) {
@@ -572,9 +635,13 @@ export const createPost = async (formData: FormData) => {
   });
 
   return postId;
-}
+};
 
-export const handlePostApproval = async (postId: string, groupId: string, action: "approve" | "reject") => {
+export const handlePostApproval = async (
+  postId: string,
+  groupId: string,
+  action: "approve" | "reject",
+) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -583,10 +650,7 @@ export const handlePostApproval = async (postId: string, groupId: string, action
     throw new Error("Not authenticated");
   }
 
-  const [post] = await db
-    .select()
-    .from(posts)
-    .where(eq(posts.id, postId));
+  const [post] = await db.select().from(posts).where(eq(posts.id, postId));
 
   if (!post || post.groupId !== groupId) {
     throw new Error("Invalid post");
@@ -631,9 +695,9 @@ export const deletePost = async (postId: string, groupId: string) => {
     .from(posts)
     .where(and(eq(posts.id, postId), eq(posts.groupId, groupId)));
 
-  await db.delete(posts).where(
-    and(eq(posts.id, postId), eq(posts.groupId, groupId)),
-  );
+  await db
+    .delete(posts)
+    .where(and(eq(posts.id, postId), eq(posts.groupId, groupId)));
 
   if (post?.images) {
     const imageUrls: string[] = JSON.parse(post.images);
@@ -682,7 +746,9 @@ export const editPost = async (formData: FormData) => {
   const groupId = formData.get("groupId") as string;
   const content = formData.get("content") as string;
   const existingUrlsJson = formData.get("existingUrls") as string;
-  const existingUrls: string[] = existingUrlsJson ? JSON.parse(existingUrlsJson) : [];
+  const existingUrls: string[] = existingUrlsJson
+    ? JSON.parse(existingUrlsJson)
+    : [];
   const newFiles = formData.getAll("newFiles") as File[];
 
   const [post] = await db
@@ -709,7 +775,15 @@ export const editPost = async (formData: FormData) => {
   for (const file of newFiles) {
     if (file && file.size > 0) {
       const ext = file.name.split(".").pop() || "png";
-      const path = `${groupId}/posts/${postId}_edit_${crypto.randomUUID()}.${ext}`;
+      const path = `${groupId}/posts/${postId}_edit_${crypto
+        .getRandomValues(new Uint8Array(16))
+        .reduce(
+          (s, b, i) =>
+            s +
+            (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+            b.toString(16).padStart(2, "0"),
+          "",
+        )}.${ext}`;
       const uploadResult = await supabase.storage
         .from(STORAGE_BUCKET)
         .upload(path, file, {
@@ -727,7 +801,10 @@ export const editPost = async (formData: FormData) => {
 
   await db
     .update(posts)
-    .set({ content: finalContent, images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null })
+    .set({
+      content: finalContent,
+      images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
+    })
     .where(eq(posts.id, postId));
 
   return imageUrls;
@@ -776,12 +853,32 @@ export const updateGroupSettings = async (formData: FormData) => {
 
   if (name && name.trim().length > 0 && name.trim() !== org.name) {
     updates.name = name.trim();
-    updates.slug = name.trim().toLowerCase().replace(/\s+/g, "-") + "-" + crypto.randomUUID().slice(0, 8);
+    updates.slug =
+      name.trim().toLowerCase().replace(/\s+/g, "-") +
+      "-" +
+      crypto
+        .getRandomValues(new Uint8Array(16))
+        .reduce(
+          (s, b, i) =>
+            s +
+            (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+            b.toString(16).padStart(2, "0"),
+          "",
+        )
+        .slice(0, 8);
   }
 
   if (coverFile && coverFile.size > 0) {
     const ext = coverFile.name.split(".").pop() || "png";
-    const path = `${groupId}/cover_${crypto.randomUUID()}.${ext}`;
+    const path = `${groupId}/cover_${crypto
+      .getRandomValues(new Uint8Array(16))
+      .reduce(
+        (s, b, i) =>
+          s +
+          (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+          b.toString(16).padStart(2, "0"),
+        "",
+      )}.${ext}`;
     const uploadResult = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(path, coverFile, {
@@ -789,9 +886,7 @@ export const updateGroupSettings = async (formData: FormData) => {
         upsert: false,
       });
     if (!uploadResult.error) {
-      const { data } = supabase.storage
-        .from(STORAGE_BUCKET)
-        .getPublicUrl(path);
+      const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
       updates.logo = data.publicUrl;
     }
   }
@@ -804,7 +899,10 @@ export const updateGroupSettings = async (formData: FormData) => {
   };
   updates.metadata = JSON.stringify(newMeta);
 
-  await db.update(organization).set(updates as any).where(eq(organization.id, groupId));
+  await db
+    .update(organization)
+    .set(updates as any)
+    .where(eq(organization.id, groupId));
 };
 
 export const toggleLikePost = async (postId: string) => {
@@ -834,7 +932,15 @@ export const toggleLikePost = async (postId: string) => {
     await db
       .insert(likes)
       .values({
-        id: crypto.randomUUID(),
+        id: crypto
+          .getRandomValues(new Uint8Array(16))
+          .reduce(
+            (s, b, i) =>
+              s +
+              (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+              b.toString(16).padStart(2, "0"),
+            "",
+          ),
         postId,
         userId,
         createdAt: new Date(),
@@ -898,8 +1004,15 @@ export const sharePost = async (formData: FormData) => {
   }
 
   const isAdmin = currentMember.role === "admin";
-  const postId = crypto.randomUUID();
-
+  const postId = crypto
+    .getRandomValues(new Uint8Array(16))
+    .reduce(
+      (s, b, i) =>
+        s +
+        (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+        b.toString(16).padStart(2, "0"),
+      "",
+    );
   const imageUrls: string[] = [];
   for (let i = 0; i < imageFiles.length; i++) {
     const file = imageFiles[i];
@@ -934,4 +1047,35 @@ export const sharePost = async (formData: FormData) => {
   });
 
   return postId;
+};
+
+export const searchGroupMembers = async (groupId: string, query: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    throw new Error("Not authenticated");
+  }
+
+  if (query.length < 2) return [];
+
+  const results = await db
+    .select({
+      userId: user.id,
+      name: user.name,
+      handle: user.handle,
+      image: user.image,
+    })
+    .from(memberTable)
+    .innerJoin(user, eq(memberTable.userId, user.id))
+    .where(
+      and(
+        eq(memberTable.organizationId, groupId),
+        like(user.handle, `${query.toLowerCase()}%`),
+      ),
+    )
+    .limit(5);
+
+  return results;
 };

@@ -8,6 +8,7 @@ import { toggleLikePost } from "@/app/actions/groups";
 import { createComment } from "@/app/actions/comments";
 import { CommentList } from "./comment-list";
 import Link from "next/link";
+import { MentionContent } from "@/components/mention-content";
 
 type Comment = {
   id: string;
@@ -80,7 +81,15 @@ export function PostPageClient({
     if (!text) return;
 
     const parentId = replyingTo?.id || undefined;
-    const optimisticId = `optimistic-${crypto.randomUUID()}`;
+    const optimisticId = `optimistic-${crypto
+      .getRandomValues(new Uint8Array(16))
+      .reduce(
+        (s, b, i) =>
+          s +
+          (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
+          b.toString(16).padStart(2, "0"),
+        "",
+      )}`;
     const optimistic: Comment = {
       id: optimisticId,
       postId: post.id,
@@ -183,7 +192,7 @@ export function PostPageClient({
           <>
             {post.content && (
               <p className="px-4 pt-3 text-sm whitespace-pre-wrap">
-                {post.content}
+                <MentionContent content={post.content} />
               </p>
             )}
             <div className="mx-4 mb-3 mt-2 rounded-lg border bg-muted/30 p-3">
@@ -210,7 +219,7 @@ export function PostPageClient({
                   </div>
                   {post.origContent && (
                     <p className="text-sm whitespace-pre-wrap">
-                      {post.origContent}
+                      <MentionContent content={post.origContent} />
                     </p>
                   )}
                   {post.origImages && post.origImages.length > 0 && (
@@ -230,7 +239,7 @@ export function PostPageClient({
           <>
             {post.content && (
               <p className="px-4 pb-4 pt-3 text-sm md:text-base whitespace-pre-wrap">
-                {post.content}
+                <MentionContent content={post.content} />
               </p>
             )}
           </>
