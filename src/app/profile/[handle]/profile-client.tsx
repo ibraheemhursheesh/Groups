@@ -46,6 +46,7 @@ export function ProfileClient({
   if (prevServerImage.current !== profile.image) {
     prevServerImage.current = profile.image;
     if (previewUrl) {
+      console.log("Revoking preview URL", previewUrl);
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
     }

@@ -2,6 +2,7 @@
 
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { db } from "@/index";
 import { user } from "@/db/schema";
 import { auth } from "@/app/lib/auth";
@@ -52,6 +53,11 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
     imageUrl = url;
   }
 
+  const [userData] = await db
+    .select({ handle: user.handle })
+    .from(user)
+    .where(eq(user.id, session.user.id));
+
   await db
     .update(user)
     .set({
@@ -60,6 +66,10 @@ export async function updateProfile(formData: FormData): Promise<UpdateProfileRe
       updatedAt: new Date(),
     })
     .where(eq(user.id, session.user.id));
+
+  if (userData) {
+    revalidatePath(`/profile/${userData.handle}`);
+  }
 
   return { ok: true };
 }
