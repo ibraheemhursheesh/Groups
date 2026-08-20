@@ -34,44 +34,53 @@ export function PostImages({ images }: { images: string[] }) {
 
   return (
     <>
-      <div
-        className="grid gap-0.5 w-full"
-        style={{
-          gridTemplateColumns: `repeat(${cols}, 1fr)`,
-          gridTemplateRows: `repeat(${rows}, auto)`,
-        }}
-      >
-        {display.map((src, i) => (
-          <div
-            key={i}
-            className="relative cursor-pointer"
-            style={{
-              aspectRatio: cols === 1 ? "16 / 9" : "1 / 1",
-              // maxHeight: rows === 1 ? "400px" : undefined,
-            }}
-            onClick={() => openCarousel(i)}
-          >
-            <Image
-              src={src}
-              alt=""
-              fill
-              className="object-cover"
-              sizes={
-                cols === 1
-                  ? "(max-width: 768px) 100vw, 700px"
-                  : "(max-width: 768px) 50vw, 350px"
-              }
-            />
-            {i === 3 && remaining > 0 && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
-                <span className="text-lg font-bold text-white">
-                  +{remaining}
-                </span>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      {cols === 1 ? (
+        <div
+          className="w-full cursor-pointer flex justify-center"
+          onClick={() => openCarousel(0)}
+        >
+          <Image
+            src={display[0]}
+            alt=""
+            width={800}
+            height={600}
+            className="max-w-full max-h-[600px] w-auto h-auto rounded-sm"
+            sizes="(max-width: 768px) 100vw, 700px"
+          />
+        </div>
+      ) : (
+        <div
+          className="grid gap-0.5 w-full"
+          style={{
+            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+            gridTemplateRows: `repeat(${rows}, auto)`,
+          }}
+        >
+          {display.map((src, i) => (
+            <div
+              key={i}
+              className="relative cursor-pointer"
+              style={{ aspectRatio: "1 / 1" }}
+              onClick={() => openCarousel(i)}
+            >
+              <Image
+                src={src}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 50vw, 350px"
+              />
+              {i === 3 && remaining > 0 && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+                  <span className="text-lg font-bold text-white">
+                    +{remaining}
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {carouselIndex !== null && (
         <Dialog

@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
     },
   },
   allowedDevOrigins: ["192.168.43.167", "localhost"],
+  cacheComponents: true,
 };
 
 export default nextConfig;
