@@ -6,6 +6,12 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  // Importing a CSS module from a component sends the file through Vite's CSS
+  // pipeline, which chokes on the Tailwind v4 PostCSS config. Tests don't need
+  // real styles, so give Vite an empty PostCSS config instead of the project's.
+  css: {
+    postcss: { plugins: [] },
+  },
   test: {
     environment: "jsdom",
     globals: true,

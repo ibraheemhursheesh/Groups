@@ -1,0 +1,294 @@
+/* Chrome-style tab strip.
+   Geometry note: a tab's element width includes a CURVE-wide gutter on each
+   side that holds the inverted bottom corner. Tabs are laid out with a pitch of
+   (width - 2 * CURVE), so those gutters nest and neighbouring backgrounds touch
+   exactly -- same trick Chrome uses. */
+
+.root {
+  --curve: 10px;
+  --strip-bg: #dee1e6;
+  --chrome-bg: #ffffff;
+  --tab-text: #3c4043;
+  --tab-text-dim: #5f6368;
+  --separator: #b9bcc0;
+  --hover-bg: rgba(255, 255, 255, 0.55);
+  --btn-hover: rgba(0, 0, 0, 0.08);
+  --omnibox-bg: #f1f3f4;
+
+  display: flex;
+  flex-direction: column;
+  height: min(560px, 70vh);
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--chrome-bg);
+  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.35);
+}
+
+/* Keyboard lock only works in fullscreen, so the replica has to fill the screen. */
+.root:fullscreen {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:global(.dark) .root {
+  --strip-bg: #202124;
+  --chrome-bg: #35363a;
+  --tab-text: #e8eaed;
+  --tab-text-dim: #9aa0a6;
+  --separator: #5f6368;
+  --hover-bg: rgba(255, 255, 255, 0.08);
+  --btn-hover: rgba(255, 255, 255, 0.1);
+  --omnibox-bg: #202124;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ---------- strip ---------- */
+
+.strip {
+  position: relative;
+  height: 40px;
+  flex: none;
+  background: var(--strip-bg);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.strip::-webkit-scrollbar {
+  display: none;
+}
+
+.track {
+  position: relative;
+  height: 100%;
+  min-width: 100%;
+}
+
+/* Suppress every animation until the first measurement lands, and while the
+   window is actively being resized (Chrome resizes tabs instantly too). */
+.root[data-ready="false"] .tab,
+.root[data-ready="false"] .newTab,
+.root[data-resizing="true"] .tab,
+.root[data-resizing="true"] .newTab {
+  transition: none !important;
+}
+
+.root[data-ready="false"] .track {
+  opacity: 0;
+}
+
+/* ---------- tab ---------- */
+
+.tab {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tab-text-dim);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  transition:
+    width 160ms cubic-bezier(0.2, 0, 0, 1),
+    transform 160ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.tab[data-dragging="true"] {
+  transition: none;
+  z-index: 30;
+}
+
+.tab[data-active="true"] {
+  color: var(--tab-text);
+  z-index: 20;
+}
+
+.tab[data-collapsed="true"] {
+  pointer-events: none;
+}
+
+/* The painted pill, inset by one curve on each side. */
+.bg {
+  position: absolute;
+  inset: 0 var(--curve);
+  border-radius: 10px 10px 0 0;
+  background: var(--tab-bg, transparent);
+}
+
+.curveLeft,
+.curveRight {
+  position: absolute;
+  bottom: 0;
+  width: var(--curve);
+  height: var(--curve);
+  pointer-events: none;
+}
+
+.curveLeft {
+  left: 0;
+  background: radial-gradient(
+    circle at 0 0,
+    transparent var(--curve),
+    var(--tab-bg, transparent) calc(var(--curve) + 0.5px)
+  );
+}
+
+.curveRight {
+  right: 0;
+  background: radial-gradient(
+    circle at 100% 0,
+    transparent var(--curve),
+    var(--tab-bg, transparent) calc(var(--curve) + 0.5px)
+  );
+}
+
+.separator {
+  position: absolute;
+  left: calc(var(--curve) - 0.5px);
+  top: 50%;
+  width: 1px;
+  height: 16px;
+  margin-top: -8px;
+  background: var(--separator);
+  pointer-events: none;
+}
+
+.content {
+  position: absolute;
+  inset: 0 var(--curve);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  overflow: hidden;
+  border-radius: 10px 10px 0 0;
+}
+
+.favicon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 12px;
+  /* Chrome fades the last few pixels of a clipped title instead of ellipsing. */
+  mask-image: linear-gradient(to right, #000 calc(100% - 12px), transparent);
+}
+
+.close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  cursor: default;
+}
+
+.close:hover {
+  background: var(--btn-hover);
+}
+
+/* ---------- new tab button ---------- */
+
+.newTab {
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--tab-text-dim);
+  cursor: default;
+  transition: transform 160ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.newTab:hover {
+  background: var(--btn-hover);
+  color: var(--tab-text);
+}
+
+/* ---------- toolbar + page ---------- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  height: 44px;
+  padding: 0 8px;
+  background: var(--chrome-bg);
+}
+
+.toolbarBtn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--tab-text-dim);
+  cursor: default;
+}
+
+.toolbarBtn:hover {
+  background: var(--btn-hover);
+}
+
+.omnibox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  margin: 0 8px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--omnibox-bg);
+  color: var(--tab-text-dim);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.page {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 28px;
+  background: var(--chrome-bg);
+  color: var(--tab-text);
+}
