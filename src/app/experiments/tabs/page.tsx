@@ -11,7 +11,7 @@ const NOTES = [
   "Once tabs hit their minimum width the strip scrolls instead of shrinking further.",
   "As a tab narrows it drops its close button, then its title, keeping the favicon last.",
   "Closing with the mouse pins the current width so the next close button lands under the cursor — it releases when the pointer leaves the strip.",
-  "Drag a tab sideways to reorder it. Middle-click closes one.",
+  "Middle-click closes a tab, same as Chrome.",
 ];
 
 const SHORTCUTS: [string, string][] = [
@@ -25,6 +25,19 @@ export default function TabsExperimentPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-4 py-10">
       <header className="space-y-2">
+        <div className="bg-amber-200 flex gap-5">
+          {Array(5)
+            .fill(null)
+            .map((_, i) => (
+              <div
+                key={i}
+                style={{ interpolateSize: "allow-keywords" }}
+                className="bg-indigo-200 basis-60 min-w-9 whitespace-nowrap overflow-hidden"
+              >
+                New Tab
+              </div>
+            ))}
+        </div>
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Experiment
         </p>

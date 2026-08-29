@@ -7,6 +7,13 @@ import { eq, and, desc, lt, count, inArray, like } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { uploadGroupCover, supabase, STORAGE_BUCKET } from "@/app/lib/supabase";
+import {
+  recordPostLikeNotification,
+  removePostLikeNotification,
+} from "@/app/lib/notifications";
+import { publish } from "@/app/lib/realtime-bus";
+import { groupTopic } from "@/lib/realtime";
+import { newId } from "@/lib/id";
 
 export const createGroup = async (formData: FormData) => {
   const session = await auth.api.getSession({
@@ -916,6 +923,17 @@ export const toggleLikePost = async (postId: string) => {
 
   const userId = session.user.id;
 
+  // Needed for both sides of the realtime story: the author is who gets the
+  // notification, and the group is the topic the new count is published on.
+  const [post] = await db
+    .select({ authorId: posts.userId, groupId: posts.groupId })
+    .from(posts)
+    .where(eq(posts.id, postId));
+
+  if (!post) {
+    throw new Error("Post not found");
+  }
+
   // Atomic toggle — no read-then-write window. The DELETE either claims the
   // existing row or reports none (Postgres serializes concurrent deletes on the
   // row lock), and the INSERT cannot duplicate thanks to the unique index on
@@ -932,15 +950,7 @@ export const toggleLikePost = async (postId: string) => {
     await db
       .insert(likes)
       .values({
-        id: crypto
-          .getRandomValues(new Uint8Array(16))
-          .reduce(
-            (s, b, i) =>
-              s +
-              (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
-              b.toString(16).padStart(2, "0"),
-            "",
-          ),
+        id: newId(),
         postId,
         userId,
         createdAt: new Date(),
@@ -951,7 +961,28 @@ export const toggleLikePost = async (postId: string) => {
     liked = true;
   }
 
-  return { liked, likeCount: await getLikeCount(postId) };
+  const likeCount = await getLikeCount(postId);
+
+  // The like itself is already durable. Notification bookkeeping is secondary,
+  // so a failure here must not turn a successful like into an error for the
+  // person who clicked.
+  try {
+    const ref = { postId, actorId: userId, recipientId: post.authorId };
+    if (liked) await recordPostLikeNotification(ref);
+    else await removePostLikeNotification(ref);
+  } catch (error) {
+    console.error("failed to update like notification", error);
+  }
+
+  publish(groupTopic(post.groupId), {
+    kind: "post-like",
+    postId,
+    groupId: post.groupId,
+    likeCount,
+    actorId: userId,
+  });
+
+  return { liked, likeCount };
 };
 
 async function getLikeCount(postId: string): Promise<number> {

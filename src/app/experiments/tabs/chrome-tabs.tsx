@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -32,7 +25,6 @@ const NEW_TAB_SLOT = 44;
 const CLOSE_ALWAYS_AT = 130;
 const TITLE_HIDE_AT = 74;
 const ANIM_MS = 160;
-const DRAG_THRESHOLD = 4;
 
 const PALETTE = [
   "#4285f4",
@@ -89,7 +81,6 @@ export function ChromeTabs() {
   /* Chrome pins the tab width after a mouse close so the next close button lands
      under the cursor; it releases once the pointer leaves the strip. */
   const [lockedWidth, setLockedWidth] = useState<number | null>(null);
-  const [drag, setDrag] = useState<{ id: string; x: number } | null>(null);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
@@ -219,73 +210,6 @@ export function ChromeTabs() {
     [tabWidth],
   );
 
-  /* ---------- drag to reorder ---------- */
-
-  const dragState = useRef<{
-    id: string;
-    pointerId: number;
-    startX: number;
-    originX: number;
-    moved: boolean;
-  } | null>(null);
-
-  const onTabPointerDown = (
-    event: ReactPointerEvent<HTMLDivElement>,
-    tab: Tab,
-  ) => {
-    if (event.button !== 0 || tab.closing) return;
-    setActiveId(tab.id);
-    const index = tabs.findIndex((t) => t.id === tab.id);
-    dragState.current = {
-      id: tab.id,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      originX: layout.offsets[index],
-      moved: false,
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const onTabPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const state = dragState.current;
-    if (!state || state.pointerId !== event.pointerId) return;
-
-    const delta = event.clientX - state.startX;
-    if (!state.moved && Math.abs(delta) < DRAG_THRESHOLD) return;
-    state.moved = true;
-
-    const maxX = Math.max(0, (liveCount - 1) * pitch);
-    const x = Math.max(0, Math.min(maxX, state.originX + delta));
-    setDrag({ id: state.id, x });
-
-    const target = Math.max(0, Math.min(liveCount - 1, Math.round(x / pitch)));
-    setTabs((prev) => {
-      const from = prev.findIndex((t) => t.id === state.id);
-      if (from === -1) return prev;
-      /* target counts live tabs only; map it back onto the array that still
-         holds any collapsing tabs. */
-      const anchor = prev.filter((t) => !t.closing)[target];
-      const to = anchor ? prev.indexOf(anchor) : from;
-      if (to === from) return prev;
-
-      const next = [...prev];
-      const [moved] = next.splice(from, 1);
-      next.splice(to, 0, moved);
-
-      /* Re-anchor the gesture to the new slot so the cursor keeps its grip. */
-      state.originX = to * pitch;
-      state.startX = event.clientX - (x - state.originX);
-      return next;
-    });
-  };
-
-  const endDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const state = dragState.current;
-    if (!state || state.pointerId !== event.pointerId) return;
-    dragState.current = null;
-    setDrag(null);
-  };
-
   /* ---------- keyboard ---------- */
 
   useEffect(() => {
@@ -390,7 +314,6 @@ export function ChromeTabs() {
           {tabs.map((tab, index) => {
             const isActive = tab.id === activeId;
             const isHovered = tab.id === hoveredId;
-            const isDragging = drag?.id === tab.id;
             const collapsed = Boolean(tab.closing || tab.entering);
             const lit = isActive || isHovered;
 
@@ -399,7 +322,6 @@ export function ChromeTabs() {
             const showSeparator =
               index > 0 &&
               !collapsed &&
-              !drag &&
               !lit &&
               prev !== undefined &&
               !prev.closing &&
@@ -421,23 +343,20 @@ export function ChromeTabs() {
                 title={tab.title}
                 data-tab-id={tab.id}
                 data-active={isActive}
-                data-dragging={isDragging}
                 data-collapsed={collapsed}
                 style={{
                   width: collapsed ? 0 : tabWidth,
-                  transform: `translateX(${
-                    isDragging && drag ? drag.x : layout.offsets[index]
-                  }px)`,
+                  transform: `translateX(${layout.offsets[index]}px)`,
                   ["--tab-bg" as string]: isActive
                     ? "var(--chrome-bg)"
                     : isHovered
                       ? "var(--hover-bg)"
                       : "transparent",
                 }}
-                onPointerDown={(event) => onTabPointerDown(event, tab)}
-                onPointerMove={onTabPointerMove}
-                onPointerUp={endDrag}
-                onPointerCancel={endDrag}
+                /* Chrome activates on press, not on click. */
+                onPointerDown={(event) => {
+                  if (event.button === 0 && !tab.closing) setActiveId(tab.id);
+                }}
                 onPointerEnter={() => setHoveredId(tab.id)}
                 onAuxClick={(event) => {
                   if (event.button === 1) {

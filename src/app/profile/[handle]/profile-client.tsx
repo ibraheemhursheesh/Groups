@@ -25,9 +25,11 @@ function formatJoinDate(date: Date) {
 export function ProfileClient({
   profile,
   isOwner,
+  children,
 }: {
   profile: Profile;
   isOwner: boolean;
+  children?: React.ReactNode;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -208,6 +210,8 @@ export function ProfileClient({
           )}
         </div>
       </div>
+
+      {children}
     </main>
   );
 }

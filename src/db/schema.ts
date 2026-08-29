@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { integer, pgTable, varchar } from "drizzle-orm/pg-core";
 import * as t from "drizzle-orm/pg-core";
 
@@ -222,3 +223,72 @@ export const verification = pgTable("verification", {
     .timestamp("updated_at", { precision: 6, withTimezone: true })
     .notNull(),
 });
+
+// A notification is an *aggregation group*, not a single event. All the likes
+// on one post collapse into one row, and the people who did the liking hang off
+// it in `notificationActors`. The group stays open while unread; reading it
+// closes it, so likes that arrive afterwards start a fresh group instead of
+// silently reviving one the user already dismissed.
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: t.text("id").primaryKey(),
+    recipientId: t
+      .text("recipient_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // "post_like" today. Comments and mentions slot in here without a schema
+    // change, which is why the target is a bare id rather than a post FK.
+    type: t.text("type").notNull(),
+    targetId: t.text("target_id").notNull(),
+    createdAt: t
+      .timestamp("created_at", { precision: 6, withTimezone: true })
+      .notNull(),
+    // Bumped every time an actor joins the group, so the newest activity sorts
+    // to the top even when the group itself is old.
+    updatedAt: t
+      .timestamp("updated_at", { precision: 6, withTimezone: true })
+      .notNull(),
+    readAt: t.timestamp("read_at", { precision: 6, withTimezone: true }),
+  },
+  (table) => [
+    // The partial unique index is what makes aggregation race-safe: concurrent
+    // likes on the same post contend on one open row and merge, rather than
+    // each creating its own notification.
+    t
+      .uniqueIndex("notifications_open_group_unique")
+      .on(table.recipientId, table.type, table.targetId)
+      .where(sql`${table.readAt} is null`),
+    t
+      .index("notifications_recipient_updated_idx")
+      .on(table.recipientId, table.updatedAt.desc()),
+  ],
+);
+
+export const notificationActors = pgTable(
+  "notification_actors",
+  {
+    id: t.text("id").primaryKey(),
+    notificationId: t
+      .text("notification_id")
+      .notNull()
+      .references(() => notifications.id, { onDelete: "cascade" }),
+    actorId: t
+      .text("actor_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: t
+      .timestamp("created_at", { precision: 6, withTimezone: true })
+      .notNull(),
+  },
+  // One row per person per group — liking, unliking and liking again moves you
+  // to the front of the group rather than counting you twice.
+  (table) => [
+    t
+      .uniqueIndex("notification_actors_notification_actor_unique")
+      .on(table.notificationId, table.actorId),
+    t
+      .index("notification_actors_notification_created_idx")
+      .on(table.notificationId, table.createdAt.desc()),
+  ],
+);

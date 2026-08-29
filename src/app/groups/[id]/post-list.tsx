@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ import { ShareDialog } from "./share-dialog";
 import { toggleLikePost } from "@/app/actions/groups";
 import { useRouter } from "next/navigation";
 import { MentionContent } from "@/components/mention-content";
+import { useRealtimeEvents } from "@/components/realtime-provider";
 
 const TRUNCATE_LENGTH = 300;
 
@@ -69,6 +70,30 @@ export function PostList({
   const [likeStates, setLikeStates] = useState<Map<string, { liked: boolean; count: number }>>(new Map());
   const likeStatesRef = useRef(likeStates);
   likeStatesRef.current = likeStates;
+  const postsRef = useRef(posts);
+  postsRef.current = posts;
+
+  // Someone else liked a post that's on screen. The event carries the
+  // authoritative total rather than a delta, so writing it straight into the
+  // optimistic overlay also repairs any drift from a missed event.
+  useRealtimeEvents(
+    useCallback((event) => {
+      if (event.kind !== "post-like") return;
+      const post = postsRef.current.find((p) => p.id === event.postId);
+      if (!post) return;
+
+      setLikeStates((prev) => {
+        const next = new Map(prev);
+        const current = next.get(event.postId);
+        next.set(event.postId, {
+          // Only this user's own click can change whether *they* liked it.
+          liked: current?.liked ?? post.hasLiked,
+          count: event.likeCount,
+        });
+        return next;
+      });
+    }, []),
+  );
 
   const virtualizer = useWindowVirtualizer({
     count: posts.length,

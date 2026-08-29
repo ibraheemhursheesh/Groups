@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { ComponentProps } from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ProfileClient } from "@/app/profile/[handle]/profile-client";
 
@@ -28,7 +29,9 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-const baseProfile = {
+// Typed from the component rather than inferred, so `image: null` — the case
+// the no-photo test covers — is representable in the overrides.
+const baseProfile: ComponentProps<typeof ProfileClient>["profile"] = {
   name: "Ibrahim Harchiche",
   handle: "ibrahim",
   image: "https://storage.example.com/profiles/photo.jpg",
