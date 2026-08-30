@@ -9,6 +9,8 @@ import { createComment } from "@/app/actions/comments";
 import { CommentList } from "./comment-list";
 import Link from "next/link";
 import { MentionContent } from "@/components/mention-content";
+import { LinkPreviewCard } from "@/components/link-preview-card";
+import type { LinkPreview } from "@/lib/links";
 import { useRealtimeEvents } from "@/components/realtime-provider";
 
 type Comment = {
@@ -35,6 +37,7 @@ type Post = {
   userImage: string | null;
   content: string;
   images: string[];
+  linkPreview: LinkPreview | null;
   createdAt: Date;
   likeCount: number;
   hasLiked: boolean;
@@ -276,6 +279,10 @@ export function PostPageClient({
       )}
 
       <PostImages images={post.images} />
+
+      {post.linkPreview && (
+        <LinkPreviewCard preview={post.linkPreview} className="mt-3" />
+      )}
 
       {/* Timestamp */}
       <div className="border-b px-4 pb-3 pt-2">

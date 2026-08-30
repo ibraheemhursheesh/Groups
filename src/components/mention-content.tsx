@@ -1,11 +1,10 @@
 import Link from "next/link";
+import { URL_REGEX_SOURCE, displayUrl, normalizeUrl } from "@/lib/links";
 
 const MENTION_REGEX = /@(\w{1,20})\b/g;
-const URL_REGEX =
-  /https?:\/\/[^\s<>\"']+|(?:www\.)[^\s<>\"']+\.[a-z]{2,}[^\s<>\"']*/gi;
 
 const COMBINED_REGEX = new RegExp(
-  `(${MENTION_REGEX.source})|(${URL_REGEX.source})`,
+  `(${MENTION_REGEX.source})|(${URL_REGEX_SOURCE})`,
   "gi",
 );
 
@@ -13,15 +12,6 @@ type Part =
   | string
   | { type: "mention"; handle: string; key: number }
   | { type: "link"; url: string; key: number };
-
-function normalizeUrl(raw: string) {
-  if (/^https?:\/\//i.test(raw)) return raw;
-  return `https://${raw}`;
-}
-
-function displayUrl(raw: string) {
-  return raw.replace(/^https?:\/\//i, "").replace(/\/$/, "");
-}
 
 export function MentionContent({ content }: { content: string }) {
   const parts: Part[] = [];

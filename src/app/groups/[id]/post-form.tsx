@@ -11,6 +11,11 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { ImageIcon, LoaderCircleIcon } from "lucide-react";
 import { searchGroupMembers } from "@/app/actions/groups";
 import imageCompression from "browser-image-compression";
+import {
+  LinkPreviewCard,
+  LinkPreviewSkeleton,
+} from "@/components/link-preview-card";
+import { useLinkPreview } from "@/components/use-link-preview";
 
 const COMPRESSION_OPTIONS = {
   maxSizeMB: 0.3,
@@ -115,6 +120,7 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
   const [previews, setPreviews] = useState<string[]>([]);
   const [compressing, setCompressing] = useState(false);
   const [content, setContent] = useState("");
+  const link = useLinkPreview(content);
   const [suggestions, setSuggestions] = useState<MentionSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -238,10 +244,13 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
     for (const file of compressedFilesRef.current) {
       formData.append("images", file);
     }
+    link.appendTo(formData);
+
     onOptimisticSubmit(formData);
     formRef.current?.reset();
     setContent("");
     clearPreviews();
+    link.reset();
   };
 
   return (
@@ -313,6 +322,16 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
           ))}
         </PopoverContent>
       </Popover>
+
+      {link.preview ? (
+        <LinkPreviewCard
+          preview={link.preview}
+          onDismiss={link.dismiss}
+          className="mb-3"
+        />
+      ) : link.loading ? (
+        <LinkPreviewSkeleton className="mb-3" />
+      ) : null}
 
       {previews.length > 0 && (
         <div className="mb-3 grid grid-cols-4 gap-1">

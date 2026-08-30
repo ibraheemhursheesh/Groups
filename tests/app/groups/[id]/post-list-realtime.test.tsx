@@ -34,6 +34,7 @@ function post(overrides: Partial<Post> = {}): Post {
     userImage: null,
     content: "Shipping the new feed today",
     images: [],
+    linkPreview: null,
     likeCount: 4,
     hasLiked: false,
     originalPostId: null,

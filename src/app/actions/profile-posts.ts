@@ -9,6 +9,8 @@ import { auth } from "@/app/lib/auth";
 import { supabase, STORAGE_BUCKET } from "@/app/lib/supabase";
 import { newId } from "@/lib/id";
 import { profileFeedId } from "@/lib/profile-feed";
+import { resolvePostLinkPreview } from "@/app/lib/link-preview";
+import { type LinkPreview, parseLinkPreview } from "@/lib/links";
 
 const MAX_IMAGES = 10;
 const PAGE_SIZE = 10;
@@ -21,6 +23,7 @@ export type ProfilePost = {
   userImage: string | null;
   content: string;
   images: string[];
+  linkPreview: LinkPreview | null;
   createdAt: Date;
 };
 
@@ -67,6 +70,7 @@ export const getProfilePosts = async (
       userImage: user.image,
       content: posts.content,
       images: posts.images,
+      linkPreview: posts.linkPreview,
       createdAt: posts.createdAt,
     })
     .from(posts)
@@ -79,7 +83,11 @@ export const getProfilePosts = async (
   const items = hasMore ? rows.slice(0, limit) : rows;
 
   return {
-    posts: items.map((p) => ({ ...p, images: parseImages(p.images) })),
+    posts: items.map((p) => ({
+      ...p,
+      images: parseImages(p.images),
+      linkPreview: parseLinkPreview(p.linkPreview),
+    })),
     nextCursor: hasMore
       ? items[items.length - 1].createdAt.toISOString()
       : null,
@@ -136,12 +144,20 @@ export const createProfilePost = async (formData: FormData) => {
 
   const createdAt = new Date();
 
+  // Fetched from the post's own text rather than taken from the client, so a
+  // card can only ever describe a link the post actually contains.
+  const linkPreview = await resolvePostLinkPreview(
+    content,
+    formData.get("previewUrl") as string | null,
+  );
+
   await db.insert(posts).values({
     id: postId,
     groupId: profileFeedId(userId),
     userId,
     content,
     images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
+    linkPreview,
     // Your own profile has no moderator, so the post is live on arrival.
     status: "approved",
     createdAt,
@@ -157,5 +173,10 @@ export const createProfilePost = async (formData: FormData) => {
     revalidatePath(`/profile/${owner.handle}`);
   }
 
-  return { id: postId, images: imageUrls, createdAt };
+  return {
+    id: postId,
+    images: imageUrls,
+    linkPreview: parseLinkPreview(linkPreview),
+    createdAt,
+  };
 };

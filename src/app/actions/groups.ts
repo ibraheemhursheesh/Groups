@@ -14,6 +14,8 @@ import {
 import { publish } from "@/app/lib/realtime-bus";
 import { groupTopic } from "@/lib/realtime";
 import { newId } from "@/lib/id";
+import { resolvePostLinkPreview } from "@/app/lib/link-preview";
+import { parseLinkPreview } from "@/lib/links";
 
 export const createGroup = async (formData: FormData) => {
   const session = await auth.api.getSession({
@@ -131,6 +133,7 @@ export const getApprovedPosts = async (
       userImage: user.image,
       content: posts.content,
       images: posts.images,
+      linkPreview: posts.linkPreview,
       createdAt: posts.createdAt,
       approvedAt: posts.approvedAt,
       originalPostId: posts.originalPostId,
@@ -200,6 +203,7 @@ export const getApprovedPosts = async (
     return {
       ...p,
       images: parseImages(p.images),
+      linkPreview: parseLinkPreview(p.linkPreview),
       likeCount: likeCountMap.get(p.id) ?? 0,
       hasLiked: userLikeSet.has(p.id),
       origContent: orig?.content ?? p.origContent ?? null,
@@ -321,6 +325,7 @@ export const getGroupPageData = async (groupId: string) => {
             userImage: user.image,
             content: posts.content,
             images: posts.images,
+            linkPreview: posts.linkPreview,
             createdAt: posts.createdAt,
           })
           .from(posts)
@@ -371,6 +376,7 @@ export const getGroupPageData = async (groupId: string) => {
     pendingPosts: (pendingPosts as any[]).map((p) => ({
       ...p,
       images: parseImages(p.images),
+      linkPreview: parseLinkPreview(p.linkPreview),
     })),
     approvedPosts,
     approvedNextCursor: nextCursor,
@@ -630,12 +636,20 @@ export const createPost = async (formData: FormData) => {
     }
   }
 
+  // The card is fetched here from the post's own text. The composer only says
+  // which link it settled on, or an empty value to mean it was dismissed.
+  const linkPreview = await resolvePostLinkPreview(
+    content,
+    formData.get("previewUrl") as string | null,
+  );
+
   await db.insert(posts).values({
     id: postId,
     groupId,
     userId: session.user.id,
     content: content.trim(),
     images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
+    linkPreview,
     status: isAdmin ? "approved" : "pending",
     createdAt: new Date(),
     approvedAt: isAdmin ? new Date() : null,
@@ -806,15 +820,23 @@ export const editPost = async (formData: FormData) => {
     }
   }
 
+  // Re-derived from the edited text: taking a link out has to take its card
+  // with it, and swapping in another has to bring the right one.
+  const linkPreview = await resolvePostLinkPreview(
+    finalContent,
+    formData.get("previewUrl") as string | null,
+  );
+
   await db
     .update(posts)
     .set({
       content: finalContent,
       images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
+      linkPreview,
     })
     .where(eq(posts.id, postId));
 
-  return imageUrls;
+  return { images: imageUrls, linkPreview: parseLinkPreview(linkPreview) };
 };
 
 export const updateGroupSettings = async (formData: FormData) => {

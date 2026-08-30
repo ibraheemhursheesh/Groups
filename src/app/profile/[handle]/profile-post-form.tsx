@@ -5,6 +5,11 @@ import { ImageIcon, LoaderCircleIcon } from "lucide-react";
 import imageCompression from "browser-image-compression";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  LinkPreviewCard,
+  LinkPreviewSkeleton,
+} from "@/components/link-preview-card";
+import { useLinkPreview } from "@/components/use-link-preview";
 
 const COMPRESSION_OPTIONS = {
   maxSizeMB: 0.3,
@@ -25,6 +30,7 @@ export function ProfilePostForm({ onOptimisticSubmit }: ProfilePostFormProps) {
   const [previews, setPreviews] = useState<string[]>([]);
   const [compressing, setCompressing] = useState(false);
   const [content, setContent] = useState("");
+  const link = useLinkPreview(content);
 
   const clearPreviews = useCallback(() => {
     // The urls are handed to the optimistic post, which owns them from here on
@@ -79,10 +85,13 @@ export function ProfilePostForm({ onOptimisticSubmit }: ProfilePostFormProps) {
     // before the upload has produced any public urls.
     formData.set("previewUrls", JSON.stringify(previews));
 
+    link.appendTo(formData);
+
     onOptimisticSubmit(formData);
     formRef.current?.reset();
     setContent("");
     clearPreviews();
+    link.reset();
   };
 
   return (
@@ -95,6 +104,16 @@ export function ProfilePostForm({ onOptimisticSubmit }: ProfilePostFormProps) {
         onChange={(e) => setContent(e.target.value)}
         className="mb-3"
       />
+
+      {link.preview ? (
+        <LinkPreviewCard
+          preview={link.preview}
+          onDismiss={link.dismiss}
+          className="mb-3"
+        />
+      ) : link.loading ? (
+        <LinkPreviewSkeleton className="mb-3" />
+      ) : null}
 
       {previews.length > 0 && (
         <div className="mb-3 grid grid-cols-4 gap-1">

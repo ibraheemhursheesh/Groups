@@ -11,6 +11,9 @@ export const posts = pgTable("posts", {
     .references(() => user.id, { onDelete: "cascade" }),
   content: t.text("content").notNull(),
   images: t.text("images"),
+  // The Open Graph card for the first link in the post, as JSON. Snapshotted
+  // at write time so a feed never has to fetch anything to render.
+  linkPreview: t.text("link_preview"),
   status: t.text("status").notNull(),
   createdAt: t
     .timestamp("created_at", { precision: 6, withTimezone: true })

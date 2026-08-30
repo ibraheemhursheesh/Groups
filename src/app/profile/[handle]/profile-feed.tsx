@@ -5,6 +5,8 @@ import { timeAgo } from "@/lib/utils";
 import { newId } from "@/lib/id";
 import { Button } from "@/components/ui/button";
 import { MentionContent } from "@/components/mention-content";
+import { LinkPreviewCard } from "@/components/link-preview-card";
+import { parseLinkPreview } from "@/lib/links";
 import { PostImages } from "@/app/groups/[id]/post-images";
 import {
   createProfilePost,
@@ -42,6 +44,11 @@ export function ProfileFeed({
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (formData: FormData) => {
+    // Display only — the stored card is whatever the server fetches for
+    // `previewUrl`, never what the client hands it.
+    const optimisticPreview = parseLinkPreview(formData.get("previewData"));
+    formData.delete("previewData");
+
     const previewUrls = JSON.parse(
       (formData.get("previewUrls") as string) || "[]",
     ) as string[];
@@ -58,6 +65,7 @@ export function ProfileFeed({
         userImage: author.image,
         content: ((formData.get("content") as string) || "").trim(),
         images: previewUrls,
+        linkPreview: optimisticPreview,
         createdAt: new Date(),
         pending: true,
       },
@@ -70,7 +78,13 @@ export function ProfileFeed({
         setPosts((prev) =>
           prev.map((p) =>
             p.id === optimisticId
-              ? { ...p, id: created.id, images: created.images, pending: false }
+            ? {
+                ...p,
+                id: created.id,
+                images: created.images,
+                linkPreview: created.linkPreview,
+                pending: false,
+              }
               : p,
           ),
         );
@@ -158,6 +172,10 @@ export function ProfileFeed({
                 )
               ) : (
                 <PostImages images={post.images} />
+              )}
+
+              {post.linkPreview && (
+                <LinkPreviewCard preview={post.linkPreview} className="mx-4 mb-3" />
               )}
             </article>
           ))}

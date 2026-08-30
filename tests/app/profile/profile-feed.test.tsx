@@ -49,6 +49,7 @@ const existingPost: FeedProps["initialPosts"][number] = {
   userImage: null,
   content: "Notes on the Analytical Engine",
   images: [],
+  linkPreview: null,
   createdAt: new Date("2024-03-01T10:00:00.000Z"),
 };
 
@@ -81,6 +82,7 @@ beforeEach(() => {
   mockCreateProfilePost.mockResolvedValue({
     id: "post-2",
     images: [],
+    linkPreview: null,
     createdAt: new Date(),
   });
 });
