@@ -4,6 +4,8 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AccountSwitcher } from "@/components/account-switcher";
+import { RealtimeProvider } from "@/components/realtime-provider";
+import { NotificationsBell } from "@/components/notifications-bell";
 import Link from "next/link";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -44,11 +46,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Link href="/">Home</Link>
-        <ThemeProvider>{children}</ThemeProvider>
-        <div className="fixed right-4 top-4 z-50">
-          <AccountSwitcher />
-        </div>
+        {/* Mounted here so the one SSE connection is opened once and survives
+            every client-side navigation, rather than reconnecting per route. */}
+        <RealtimeProvider>
+          <Link href="/">Home</Link>
+          <ThemeProvider>{children}</ThemeProvider>
+          <div className="fixed right-4 top-4 z-50 flex items-center gap-2">
+            <NotificationsBell />
+            <AccountSwitcher />
+          </div>
+        </RealtimeProvider>
       </body>
     </html>
   );

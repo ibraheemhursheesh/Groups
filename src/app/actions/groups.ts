@@ -7,6 +7,15 @@ import { eq, and, desc, lt, count, inArray, like } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { uploadGroupCover, supabase, STORAGE_BUCKET } from "@/app/lib/supabase";
+import {
+  recordPostLikeNotification,
+  removePostLikeNotification,
+} from "@/app/lib/notifications";
+import { publish } from "@/app/lib/realtime-bus";
+import { groupTopic } from "@/lib/realtime";
+import { newId } from "@/lib/id";
+import { resolvePostLinkPreview } from "@/app/lib/link-preview";
+import { parseLinkPreview } from "@/lib/links";
 
 export const createGroup = async (formData: FormData) => {
   const session = await auth.api.getSession({
@@ -124,6 +133,7 @@ export const getApprovedPosts = async (
       userImage: user.image,
       content: posts.content,
       images: posts.images,
+      linkPreview: posts.linkPreview,
       createdAt: posts.createdAt,
       approvedAt: posts.approvedAt,
       originalPostId: posts.originalPostId,
@@ -193,6 +203,7 @@ export const getApprovedPosts = async (
     return {
       ...p,
       images: parseImages(p.images),
+      linkPreview: parseLinkPreview(p.linkPreview),
       likeCount: likeCountMap.get(p.id) ?? 0,
       hasLiked: userLikeSet.has(p.id),
       origContent: orig?.content ?? p.origContent ?? null,
@@ -314,6 +325,7 @@ export const getGroupPageData = async (groupId: string) => {
             userImage: user.image,
             content: posts.content,
             images: posts.images,
+            linkPreview: posts.linkPreview,
             createdAt: posts.createdAt,
           })
           .from(posts)
@@ -364,6 +376,7 @@ export const getGroupPageData = async (groupId: string) => {
     pendingPosts: (pendingPosts as any[]).map((p) => ({
       ...p,
       images: parseImages(p.images),
+      linkPreview: parseLinkPreview(p.linkPreview),
     })),
     approvedPosts,
     approvedNextCursor: nextCursor,
@@ -623,12 +636,20 @@ export const createPost = async (formData: FormData) => {
     }
   }
 
+  // The card is fetched here from the post's own text. The composer only says
+  // which link it settled on, or an empty value to mean it was dismissed.
+  const linkPreview = await resolvePostLinkPreview(
+    content,
+    formData.get("previewUrl") as string | null,
+  );
+
   await db.insert(posts).values({
     id: postId,
     groupId,
     userId: session.user.id,
     content: content.trim(),
     images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
+    linkPreview,
     status: isAdmin ? "approved" : "pending",
     createdAt: new Date(),
     approvedAt: isAdmin ? new Date() : null,
@@ -799,15 +820,23 @@ export const editPost = async (formData: FormData) => {
     }
   }
 
+  // Re-derived from the edited text: taking a link out has to take its card
+  // with it, and swapping in another has to bring the right one.
+  const linkPreview = await resolvePostLinkPreview(
+    finalContent,
+    formData.get("previewUrl") as string | null,
+  );
+
   await db
     .update(posts)
     .set({
       content: finalContent,
       images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
+      linkPreview,
     })
     .where(eq(posts.id, postId));
 
-  return imageUrls;
+  return { images: imageUrls, linkPreview: parseLinkPreview(linkPreview) };
 };
 
 export const updateGroupSettings = async (formData: FormData) => {
@@ -916,6 +945,17 @@ export const toggleLikePost = async (postId: string) => {
 
   const userId = session.user.id;
 
+  // Needed for both sides of the realtime story: the author is who gets the
+  // notification, and the group is the topic the new count is published on.
+  const [post] = await db
+    .select({ authorId: posts.userId, groupId: posts.groupId })
+    .from(posts)
+    .where(eq(posts.id, postId));
+
+  if (!post) {
+    throw new Error("Post not found");
+  }
+
   // Atomic toggle — no read-then-write window. The DELETE either claims the
   // existing row or reports none (Postgres serializes concurrent deletes on the
   // row lock), and the INSERT cannot duplicate thanks to the unique index on
@@ -932,15 +972,7 @@ export const toggleLikePost = async (postId: string) => {
     await db
       .insert(likes)
       .values({
-        id: crypto
-          .getRandomValues(new Uint8Array(16))
-          .reduce(
-            (s, b, i) =>
-              s +
-              (i === 4 || i === 6 || i === 8 || i === 10 ? "-" : "") +
-              b.toString(16).padStart(2, "0"),
-            "",
-          ),
+        id: newId(),
         postId,
         userId,
         createdAt: new Date(),
@@ -951,7 +983,28 @@ export const toggleLikePost = async (postId: string) => {
     liked = true;
   }
 
-  return { liked, likeCount: await getLikeCount(postId) };
+  const likeCount = await getLikeCount(postId);
+
+  // The like itself is already durable. Notification bookkeeping is secondary,
+  // so a failure here must not turn a successful like into an error for the
+  // person who clicked.
+  try {
+    const ref = { postId, actorId: userId, recipientId: post.authorId };
+    if (liked) await recordPostLikeNotification(ref);
+    else await removePostLikeNotification(ref);
+  } catch (error) {
+    console.error("failed to update like notification", error);
+  }
+
+  publish(groupTopic(post.groupId), {
+    kind: "post-like",
+    postId,
+    groupId: post.groupId,
+    likeCount,
+    actorId: userId,
+  });
+
+  return { liked, likeCount };
 };
 
 async function getLikeCount(postId: string): Promise<number> {

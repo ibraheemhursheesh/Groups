@@ -16,6 +16,7 @@ import {
   handleJoinRequest,
   sharePost,
 } from "@/app/actions/groups";
+import { parseLinkPreview, type LinkPreview } from "@/lib/links";
 
 type Post = {
   id: string;
@@ -25,6 +26,7 @@ type Post = {
   userImage: string | null;
   content: string;
   images: string[];
+  linkPreview: LinkPreview | null;
   likeCount: number;
   hasLiked: boolean;
   originalPostId: string | null;
@@ -87,6 +89,12 @@ export function PostsWrapper({
   const [loadingMore, startLoadMore] = useTransition();
 
   const handlePostSubmit = (formData: FormData) => {
+    // The composer already fetched the card; it rides along for the optimistic
+    // post only. What gets stored is whatever the server fetches for
+    // `previewUrl`, so a client cannot publish a card of its own making.
+    const optimisticPreview = parseLinkPreview(formData.get("previewData"));
+    formData.delete("previewData");
+
     formData.set("groupId", groupId);
 
     const imageFiles = formData.getAll("images") as File[];
@@ -113,6 +121,7 @@ export function PostsWrapper({
           userImage: currentUserImage,
           content: (formData.get("content") as string)?.trim() || "",
           images: optimisticImageUrls,
+          linkPreview: optimisticPreview,
           likeCount: 0,
           hasLiked: false,
           originalPostId: null,
@@ -171,6 +180,7 @@ export function PostsWrapper({
     content: string,
     existingUrls: string[],
     newFiles: File[],
+    previewUrl: string,
   ) => {
     const optimisticImages = [
       ...existingUrls,
@@ -185,14 +195,22 @@ export function PostsWrapper({
     formData.set("postId", postId);
     formData.set("groupId", groupId);
     formData.set("content", content);
+    formData.set("previewUrl", previewUrl);
     formData.set("existingUrls", JSON.stringify(existingUrls));
     for (const file of newFiles) {
       if (file.size > 0) formData.append("newFiles", file);
     }
-    const finalImages = await editPost(formData);
+    const saved = await editPost(formData);
     setApprovedPosts((prev) =>
       prev.map((p) =>
-        p.id === postId ? { ...p, content, images: finalImages } : p,
+        p.id === postId
+          ? {
+              ...p,
+              content,
+              images: saved.images,
+              linkPreview: saved.linkPreview,
+            }
+          : p,
       ),
     );
   };
@@ -227,6 +245,8 @@ export function PostsWrapper({
           userImage: currentUserImage,
           content,
           images: [],
+          // A share's card slot is taken by the post it quotes.
+          linkPreview: null,
           likeCount: 0,
           hasLiked: false,
           originalPostId,

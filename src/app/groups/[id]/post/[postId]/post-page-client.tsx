@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useCallback, useState, useRef } from "react";
 import { ArrowLeft, Heart, MessageCircle, Repeat2, Bookmark, Share, MoreHorizontal } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
 import { PostImages } from "../../post-images";
@@ -9,6 +9,9 @@ import { createComment } from "@/app/actions/comments";
 import { CommentList } from "./comment-list";
 import Link from "next/link";
 import { MentionContent } from "@/components/mention-content";
+import { LinkPreviewCard } from "@/components/link-preview-card";
+import type { LinkPreview } from "@/lib/links";
+import { useRealtimeEvents } from "@/components/realtime-provider";
 
 type Comment = {
   id: string;
@@ -34,6 +37,7 @@ type Post = {
   userImage: string | null;
   content: string;
   images: string[];
+  linkPreview: LinkPreview | null;
   createdAt: Date;
   likeCount: number;
   hasLiked: boolean;
@@ -79,6 +83,17 @@ export function PostPageClient({
   const [commentText, setCommentText] = useState("");
   const [replyingTo, setReplyingTo] = useState<{ id: string; userName: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Live count for this one post; `liked` stays local because it is personal.
+  useRealtimeEvents(
+    useCallback(
+      (event) => {
+        if (event.kind !== "post-like" || event.postId !== post.id) return;
+        setLikeCount(event.likeCount);
+      },
+      [post.id],
+    ),
+  );
 
   const handleLike = () => {
     setLiked((prev) => !prev);
@@ -264,6 +279,10 @@ export function PostPageClient({
       )}
 
       <PostImages images={post.images} />
+
+      {post.linkPreview && (
+        <LinkPreviewCard preview={post.linkPreview} className="mt-3" />
+      )}
 
       {/* Timestamp */}
       <div className="border-b px-4 pb-3 pt-2">

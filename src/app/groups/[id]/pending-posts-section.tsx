@@ -2,6 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { PostImages } from "./post-images";
+import { LinkPreviewCard } from "@/components/link-preview-card";
+import type { LinkPreview } from "@/lib/links";
 
 type PendingPost = {
   id: string;
@@ -11,6 +13,7 @@ type PendingPost = {
   userImage: string | null;
   content: string;
   images: string[];
+  linkPreview: LinkPreview | null;
   createdAt: Date;
 };
 
@@ -67,6 +70,9 @@ export function PendingPostsSection({
               {post.content}
             </p>
             <PostImages images={post.images} />
+            {post.linkPreview && (
+              <LinkPreviewCard preview={post.linkPreview} className="mx-4 mb-3" />
+            )}
           </li>
         ))}
       </ul>

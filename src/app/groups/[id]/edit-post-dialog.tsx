@@ -13,6 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageIcon, LoaderCircleIcon } from "lucide-react";
 import imageCompression from "browser-image-compression";
+import {
+  LinkPreviewCard,
+  LinkPreviewSkeleton,
+} from "@/components/link-preview-card";
+import { useLinkPreview } from "@/components/use-link-preview";
+import type { LinkPreview } from "@/lib/links";
 
 const COMPRESSION_OPTIONS = {
   maxSizeMB: 0.3,
@@ -35,7 +41,15 @@ interface EditPostDialogProps {
   groupId: string;
   initialContent: string;
   initialImages: string[];
-  onSave: (postId: string, groupId: string, content: string, existingUrls: string[], newFiles: File[]) => Promise<void>;
+  initialLinkPreview: LinkPreview | null;
+  onSave: (
+    postId: string,
+    groupId: string,
+    content: string,
+    existingUrls: string[],
+    newFiles: File[],
+    previewUrl: string,
+  ) => Promise<void>;
 }
 
 export function EditPostDialog({
@@ -45,12 +59,14 @@ export function EditPostDialog({
   groupId,
   initialContent,
   initialImages,
+  initialLinkPreview,
   onSave,
 }: EditPostDialogProps) {
   const [content, setContent] = useState(initialContent);
   const [images, setImages] = useState<ImageItem[]>(() =>
     initialImages.map((url) => ({ url, isExisting: true })),
   );
+  const link = useLinkPreview(content, initialLinkPreview);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const objectUrlsRef = useRef<string[]>([]);
@@ -113,7 +129,14 @@ export function EditPostDialog({
 
     const existingUrls = images.filter((i) => i.isExisting).map((i) => i.url);
 
-    await onSave(postId, groupId, content.trim(), existingUrls, Array.from(newFilesRef.current.values()));
+    await onSave(
+      postId,
+      groupId,
+      content.trim(),
+      existingUrls,
+      Array.from(newFilesRef.current.values()),
+      link.previewUrl,
+    );
     setSaving(false);
     cleanupUrls();
     onOpenChange(false);
@@ -141,6 +164,15 @@ export function EditPostDialog({
             rows={4}
             disabled={saving}
           />
+
+          {link.preview ? (
+            <LinkPreviewCard
+              preview={link.preview}
+              onDismiss={link.dismiss}
+            />
+          ) : link.loading ? (
+            <LinkPreviewSkeleton />
+          ) : null}
 
           {images.length > 0 && (
             <div className="grid grid-cols-4 gap-1">

@@ -4,6 +4,7 @@ import { auth } from "@/app/lib/auth";
 import { db } from "@/index";
 import { comments, commentLikes, posts, user } from "@/db/schema";
 import { eq, and, desc, count, isNull, inArray } from "drizzle-orm";
+import { parseLinkPreview } from "@/lib/links";
 import { headers } from "next/headers";
 
 export async function getPost(postId: string) {
@@ -20,6 +21,7 @@ export async function getPost(postId: string) {
       userImage: user.image,
       content: posts.content,
       images: posts.images,
+      linkPreview: posts.linkPreview,
       createdAt: posts.createdAt,
       originalPostId: posts.originalPostId,
     })
@@ -39,7 +41,11 @@ export async function getPost(postId: string) {
     }
   };
 
-  return { ...post, images: parseImages(post.images) };
+  return {
+    ...post,
+    images: parseImages(post.images),
+    linkPreview: parseLinkPreview(post.linkPreview),
+  };
 }
 
 export async function getComments(postId: string) {
