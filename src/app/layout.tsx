@@ -7,6 +7,8 @@ import { AccountSwitcher } from "@/components/account-switcher";
 import { RealtimeProvider } from "@/components/realtime-provider";
 import { NotificationsBell } from "@/components/notifications-bell";
 import Link from "next/link";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -56,6 +58,8 @@ export default function RootLayout({
             <AccountSwitcher />
           </div>
         </RealtimeProvider>
+        <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );

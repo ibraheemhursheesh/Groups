@@ -19,6 +19,8 @@
     "@radix-ui/react-tabs": "^1.1.21",
     "@supabase/supabase-js": "^2.111.0",
     "@tanstack/react-virtual": "^3.14.9",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "better-auth": "^1.6.25",
     "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.1",
