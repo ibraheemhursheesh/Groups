@@ -1,0 +1,115 @@
+✓ Lockfile passes supply-chain policies (verified 28m ago)
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Progress: resolved 41, reused 7, downloaded 0, added 0
+Progress: resolved 155, reused 28, downloaded 0, added 0
+Progress: resolved 206, reused 32, downloaded 0, added 0
+Progress: resolved 215, reused 57, downloaded 0, added 0
+Progress: resolved 217, reused 129, downloaded 0, added 0
+Progress: resolved 344, reused 135, downloaded 0, added 0
+Progress: resolved 402, reused 138, downloaded 0, added 0
+Progress: resolved 492, reused 152, downloaded 0, added 0
+Progress: resolved 504, reused 198, downloaded 0, added 0
+Progress: resolved 508, reused 258, downloaded 0, added 0
+[WARN] Tarball download average speed 38 KiB/s (size 60 KiB) is below 50 KiB/s: https://registry.npmjs.org/@rollup/plugin-commonjs/-/plugin-commonjs-28.0.1.tgz (GET)
+Progress: resolved 514, reused 308, downloaded 1, added 0
+Progress: resolved 635, reused 373, downloaded 5, added 0
+Progress: resolved 642, reused 470, downloaded 10, added 0
+Progress: resolved 643, reused 471, downloaded 18, added 0
+[WARN] Tarball download average speed 22 KiB/s (size 124 KiB) is below 50 KiB/s: https://registry.npmjs.org/@sentry/react/-/react-10.72.0.tgz (GET)
+Progress: resolved 647, reused 471, downloaded 19, added 0
+[WARN] Tarball download average speed 18 KiB/s (size 113 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/api/-/api-1.9.1.tgz (GET)
+Progress: resolved 649, reused 471, downloaded 22, added 0
+[WARN] Tarball download average speed 6 KiB/s (size 18 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/sdk-trace-base/-/sdk-trace-base-2.10.0.tgz (GET)
+[WARN] Tarball download average speed 29 KiB/s (size 85 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/sdk-trace/-/sdk-trace-2.10.0.tgz (GET)
+Progress: resolved 650, reused 471, downloaded 23, added 0
+[WARN] Tarball download average speed 27 KiB/s (size 81 KiB) is below 50 KiB/s: https://registry.npmjs.org/minipass/-/minipass-7.1.3.tgz (GET)
+[WARN] Tarball download average speed 45 KiB/s (size 348 KiB) is below 50 KiB/s: https://registry.npmjs.org/@sentry/vercel-edge/-/vercel-edge-10.72.0.tgz (GET)
+[WARN] Tarball download average speed 1 KiB/s (size 8 KiB) is below 50 KiB/s: https://registry.npmjs.org/estree-walker/-/estree-walker-2.0.2.tgz (GET)
+[WARN] Tarball download average speed 21 KiB/s (size 99 KiB) is below 50 KiB/s: https://registry.npmjs.org/path-scurry/-/path-scurry-2.0.2.tgz (GET)
+Progress: resolved 653, reused 471, downloaded 24, added 0
+[WARN] Tarball download average speed 3 KiB/s (size 19 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/api-logs/-/api-logs-0.220.0.tgz (GET)
+Progress: resolved 655, reused 471, downloaded 27, added 0
+[WARN] Tarball download average speed 22 KiB/s (size 69 KiB) is below 50 KiB/s: https://registry.npmjs.org/@opentelemetry/core/-/core-2.10.0.tgz (GET)
+Progress: resolved 655, reused 471, downloaded 33, added 0
+[WARN] Tarball download average speed 20 KiB/s (size 135 KiB) is below 50 KiB/s: https://registry.npmjs.org/@sentry/feedback/-/feedback-10.72.0.tgz (GET)
+Progress: resolved 655, reused 471, downloaded 34, added 0
+Progress: resolved 655, reused 471, downloaded 36, added 0
+[WARN] Tarball download average speed 38 KiB/s (size 508 KiB) is below 50 KiB/s: https://registry.npmjs.org/@sentry/node/-/node-10.72.0.tgz (GET)
+[WARN] Tarball download average speed 28 KiB/s (size 365 KiB) is below 50 KiB/s: https://registry.npmjs.org/@sentry/bundler-plugin-core/-/bundler-plugin-core-5.3.0.tgz (GET)
+Progress: resolved 655, reused 471, downloaded 37, added 0
+[WARN] Tarball download average speed 40 KiB/s (size 562 KiB) is below 50 KiB/s: https://registry.npmjs.org/rollup/-/rollup-4.63.1.tgz (GET)
+[WARN] Request took 12743ms: https://registry.npmjs.org/@sentry%2Fcli-win32-arm64
+[WARN] Tarball download average speed 28 KiB/s (size 173 KiB) is below 50 KiB/s: https://registry.npmjs.org/@sentry/replay-canvas/-/replay-canvas-10.72.0.tgz (GET)
+Progress: resolved 656, reused 471, downloaded 40, added 0
+[WARN] Request took 13117ms: https://registry.npmjs.org/cjs-module-lexer
+Progress: resolved 692, reused 505, downloaded 41, added 0
+Progress: resolved 712, reused 505, downloaded 41, added 0
+[WARN] Tarball download average speed 35 KiB/s (size 608 KiB) is below 50 KiB/s: https://registry.npmjs.org/@sentry/conventions/-/conventions-0.16.0.tgz (GET)
+Progress: resolved 725, reused 505, downloaded 41, added 0
+[WARN] Tarball download average speed 49 KiB/s (size 555 KiB) is below 50 KiB/s: https://registry.npmjs.org/@sentry/replay/-/replay-10.72.0.tgz (GET)
+Progress: resolved 725, reused 505, downloaded 42, added 0
+[WARN] Tarball download average speed 47 KiB/s (size 995 KiB) is below 50 KiB/s: https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.63.1.tgz (GET)
+Progress: resolved 725, reused 521, downloaded 45, added 0
+Progress: resolved 725, reused 532, downloaded 46, added 0
+Progress: resolved 725, reused 532, downloaded 47, added 0
+Progress: resolved 725, reused 532, downloaded 48, added 0
+Progress: resolved 725, reused 532, downloaded 49, added 0
+Progress: resolved 726, reused 532, downloaded 49, added 0
+Progress: resolved 733, reused 532, downloaded 49, added 0
+Progress: resolved 760, reused 532, downloaded 49, added 0
+Progress: resolved 765, reused 532, downloaded 49, added 0
+Progress: resolved 770, reused 532, downloaded 49, added 0
+Progress: resolved 771, reused 532, downloaded 49, added 0
+Progress: resolved 784, reused 532, downloaded 49, added 0
+Progress: resolved 788, reused 532, downloaded 54, added 0
+Progress: resolved 790, reused 539, downloaded 56, added 0
+Progress: resolved 791, reused 539, downloaded 60, added 0
+Progress: resolved 792, reused 539, downloaded 60, added 0
+[WARN] Tarball download average speed 8 KiB/s (size 25 KiB) is below 50 KiB/s: https://registry.npmjs.org/watchpack/-/watchpack-2.5.2.tgz (GET)
+[WARN] Tarball download average speed 8 KiB/s (size 28 KiB) is below 50 KiB/s: https://registry.npmjs.org/@webassemblyjs/ast/-/ast-1.14.1.tgz (GET)
+[WARN] 1 deprecated subdependencies found: tsconfck@3.1.6
+Progress: resolved 792, reused 539, downloaded 61, added 0
+Packages: +137 -41
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-------------------
+Progress: resolved 792, reused 539, downloaded 64, added 0
+Progress: resolved 792, reused 539, downloaded 66, added 0
+Progress: resolved 792, reused 539, downloaded 67, added 0
+Progress: resolved 792, reused 539, downloaded 68, added 0
+Progress: resolved 792, reused 539, downloaded 76, added 0
+Progress: resolved 792, reused 539, downloaded 83, added 0
+Progress: resolved 792, reused 539, downloaded 87, added 0
+Progress: resolved 792, reused 539, downloaded 91, added 0
+Progress: resolved 792, reused 539, downloaded 94, added 3
+Progress: resolved 792, reused 539, downloaded 94, added 7
+Progress: resolved 792, reused 539, downloaded 94, added 8
+Progress: resolved 792, reused 539, downloaded 94, added 10
+Progress: resolved 792, reused 539, downloaded 95, added 10
+Progress: resolved 792, reused 539, downloaded 95, added 18
+Progress: resolved 792, reused 539, downloaded 95, added 19
+Progress: resolved 792, reused 539, downloaded 95, added 28
+Progress: resolved 792, reused 539, downloaded 96, added 28
+Progress: resolved 792, reused 539, downloaded 96, added 35
+Progress: resolved 792, reused 539, downloaded 96, added 45
+Progress: resolved 792, reused 539, downloaded 96, added 47
+Progress: resolved 792, reused 539, downloaded 96, added 48
+Progress: resolved 792, reused 539, downloaded 96, added 49
+Progress: resolved 792, reused 539, downloaded 96, added 54
+Progress: resolved 792, reused 539, downloaded 96, added 59
+Progress: resolved 792, reused 539, downloaded 96, added 67
+Progress: resolved 792, reused 539, downloaded 96, added 82
+Progress: resolved 792, reused 539, downloaded 96, added 100
+Progress: resolved 792, reused 539, downloaded 96, added 110
+Progress: resolved 792, reused 539, downloaded 96, added 121
+Progress: resolved 792, reused 539, downloaded 96, added 131
+Progress: resolved 792, reused 539, downloaded 96, added 134
+Progress: resolved 792, reused 539, downloaded 96, added 135
+Progress: resolved 792, reused 539, downloaded 96, added 136
+Progress: resolved 792, reused 539, downloaded 96, added 137
+Progress: resolved 792, reused 539, downloaded 96, added 137, done
+
+dependencies:
++ @sentry/nextjs 10.72.0
+
+[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: @sentry/cli@2.58.6
+
+Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.
