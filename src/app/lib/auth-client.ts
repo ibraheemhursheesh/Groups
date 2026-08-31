@@ -3,7 +3,7 @@ import { organizationClient, anonymousClient, multiSessionClient, inferAdditiona
 import type { auth } from "@/app/lib/auth";
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL!,
+  baseURL: process.env.PUB_BETTER_AUTH_URL!,
   plugins: [
     organizationClient(),
     anonymousClient(),
