@@ -2,7 +2,7 @@
 
 import { auth } from "@/app/lib/auth";
 import { db } from "@/index";
-import { joinRequests, posts, user, organization, member as memberTable, likes } from "@/db/schema";
+import { joinRequests, posts, user, organization, member as memberTable, likes, pollVotes } from "@/db/schema";
 import { eq, and, desc, lt, count, inArray, like } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -16,6 +16,13 @@ import { groupTopic } from "@/lib/realtime";
 import { newId } from "@/lib/id";
 import { resolvePostLinkPreview } from "@/app/lib/link-preview";
 import { parseLinkPreview } from "@/lib/links";
+import { loadPollCounts, loadPollResults } from "@/app/lib/polls";
+import {
+  buildPoll,
+  buildPollResults,
+  parsePoll,
+  unvotedPollResults,
+} from "@/lib/poll";
 
 export const createGroup = async (formData: FormData) => {
   const session = await auth.api.getSession({
@@ -134,6 +141,7 @@ export const getApprovedPosts = async (
       content: posts.content,
       images: posts.images,
       linkPreview: posts.linkPreview,
+      poll: posts.poll,
       createdAt: posts.createdAt,
       approvedAt: posts.approvedAt,
       originalPostId: posts.originalPostId,
@@ -198,12 +206,17 @@ export const getApprovedPosts = async (
   );
   const userLikeSet = new Set(userLikes.map((l) => l.postId));
 
+  const pollResults = await loadPollResults(items, session.user.id);
+
   const posts_list = (items as any[]).map((p) => {
     const orig = p.originalPostId ? origPostMap.get(p.originalPostId) : null;
     return {
       ...p,
       images: parseImages(p.images),
       linkPreview: parseLinkPreview(p.linkPreview),
+      // Already counted, already percentaged — the feed renders a poll without
+      // knowing anything about how votes are stored.
+      poll: pollResults.get(p.id) ?? null,
       likeCount: likeCountMap.get(p.id) ?? 0,
       hasLiked: userLikeSet.has(p.id),
       origContent: orig?.content ?? p.origContent ?? null,
@@ -326,6 +339,7 @@ export const getGroupPageData = async (groupId: string) => {
             content: posts.content,
             images: posts.images,
             linkPreview: posts.linkPreview,
+            poll: posts.poll,
             createdAt: posts.createdAt,
           })
           .from(posts)
@@ -345,6 +359,7 @@ export const getGroupPageData = async (groupId: string) => {
           id: posts.id,
           content: posts.content,
           images: posts.images,
+          poll: posts.poll,
           createdAt: posts.createdAt,
         })
         .from(posts)
@@ -373,16 +388,20 @@ export const getGroupPageData = async (groupId: string) => {
     currentUserHandle,
     joinRequest: joinRequest || null,
     pendingRequests,
+    // A pending poll has no votes yet, so its choices are shown as written —
+    // moderation is about the question, not the tally.
     pendingPosts: (pendingPosts as any[]).map((p) => ({
       ...p,
       images: parseImages(p.images),
       linkPreview: parseLinkPreview(p.linkPreview),
+      poll: unvotedPollResults(p.poll),
     })),
     approvedPosts,
     approvedNextCursor: nextCursor,
     myPendingPosts: (myPendingPosts as any[]).map((p) => ({
       ...p,
       images: parseImages(p.images),
+      poll: unvotedPollResults(p.poll),
     })),
     members: allMembers,
   };
@@ -586,6 +605,14 @@ export const createPost = async (formData: FormData) => {
   const imageFiles = formData.getAll("images") as File[];
   const hasImages = imageFiles.some((f) => f.size > 0);
 
+  // Option ids are minted server-side here, so a vote can only ever name an
+  // option this server wrote. Throws on a malformed or too-short poll.
+  const poll = buildPoll(formData.get("poll"), newId);
+
+  if (poll && !content.trim()) {
+    throw new Error("A poll needs a question");
+  }
+
   if (!content.trim() && !hasImages) {
     throw new Error("Post content or an image is required");
   }
@@ -650,12 +677,109 @@ export const createPost = async (formData: FormData) => {
     content: content.trim(),
     images: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
     linkPreview,
+    poll: poll ? JSON.stringify(poll) : null,
     status: isAdmin ? "approved" : "pending",
     createdAt: new Date(),
     approvedAt: isAdmin ? new Date() : null,
   });
 
-  return postId;
+  // The poll comes back with the ids the server minted, so the optimistic post
+  // the composer already rendered becomes answerable without a refresh.
+  return { id: postId, poll: poll ? buildPollResults(poll, {}, null) : null };
+};
+
+/**
+ * Records the caller's choice on a poll, or moves it if they already answered.
+ * There is no way to withdraw a vote — a poll asks which one you pick, not
+ * whether you have an opinion.
+ *
+ * Returns the whole tally rather than a delta, and broadcasts the same thing,
+ * so a client that missed an event still lands on the right numbers.
+ */
+export const votePoll = async (postId: string, optionId: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    throw new Error("Not authenticated");
+  }
+
+  const userId = session.user.id;
+
+  const [post] = await db
+    .select({ poll: posts.poll, groupId: posts.groupId, status: posts.status })
+    .from(posts)
+    .where(eq(posts.id, postId));
+
+  if (!post) {
+    throw new Error("Post not found");
+  }
+
+  // A poll under review isn't in anyone's feed yet, so a vote on one could
+  // only have come from outside the UI.
+  if (post.status !== "approved") {
+    throw new Error("This poll is not open yet");
+  }
+
+  const poll = parsePoll(post.poll);
+  if (!poll) {
+    throw new Error("This post is not a poll");
+  }
+
+  // The client names an option; the server checks it against the options it
+  // stored, so a request cannot invent a choice that was never offered.
+  if (!poll.options.some((option) => option.id === optionId)) {
+    throw new Error("Unknown poll choice");
+  }
+
+  // Voting is a member's act — the same bar as posting. Rendering the poll to
+  // a visitor of a public group is not permission to answer it.
+  let memberResult = null;
+  try {
+    memberResult = await auth.api.getFullOrganization({
+      headers: await headers(),
+      query: { organizationId: post.groupId },
+    });
+  } catch {
+    // Not a member — the lookup itself is refused.
+  }
+
+  const isMember = memberResult?.members.some((m) => m.userId === userId);
+  if (!isMember) {
+    throw new Error("Not a member");
+  }
+
+  const now = new Date();
+
+  // One statement, so two fast clicks cannot leave a voter with two rows: the
+  // unique index on (post_id, user_id) turns the second into the update.
+  await db
+    .insert(pollVotes)
+    .values({
+      id: newId(),
+      postId,
+      optionId,
+      userId,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [pollVotes.postId, pollVotes.userId],
+      set: { optionId, updatedAt: now },
+    });
+
+  const counts = await loadPollCounts(postId);
+
+  publish(groupTopic(post.groupId), {
+    kind: "poll-vote",
+    postId,
+    groupId: post.groupId,
+    counts,
+    actorId: userId,
+  });
+
+  return { counts, votedOptionId: optionId };
 };
 
 export const handlePostApproval = async (

@@ -14,6 +14,17 @@ export type RealtimeEvent =
       // an event still lands on the right number from the next one.
       likeCount: number;
       actorId: string;
+    }
+  | {
+      kind: "poll-vote";
+      postId: string;
+      groupId: string;
+      // The whole tally, keyed by option id — authoritative at commit time,
+      // for the same reason `likeCount` is. Which option the *viewer* picked
+      // is deliberately absent: that is personal, and every client already
+      // knows its own answer.
+      counts: Record<string, number>;
+      actorId: string;
     };
 
 export const userTopic = (userId: string) => `user:${userId}`;

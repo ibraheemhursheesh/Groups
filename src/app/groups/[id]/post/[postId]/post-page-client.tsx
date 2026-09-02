@@ -4,13 +4,19 @@ import { useCallback, useState, useRef } from "react";
 import { ArrowLeft, Heart, MessageCircle, Repeat2, Bookmark, Share, MoreHorizontal } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
 import { PostImages } from "../../post-images";
-import { toggleLikePost } from "@/app/actions/groups";
+import { toggleLikePost, votePoll } from "@/app/actions/groups";
 import { createComment } from "@/app/actions/comments";
 import { CommentList } from "./comment-list";
 import Link from "next/link";
 import { MentionContent } from "@/components/mention-content";
 import { LinkPreviewCard } from "@/components/link-preview-card";
 import type { LinkPreview } from "@/lib/links";
+import { PollBlock } from "../../poll-block";
+import {
+  applyOptimisticVote,
+  applyPollCounts,
+  type PollResults,
+} from "@/lib/poll";
 import { useRealtimeEvents } from "@/components/realtime-provider";
 
 type Comment = {
@@ -38,6 +44,7 @@ type Post = {
   content: string;
   images: string[];
   linkPreview: LinkPreview | null;
+  poll: PollResults | null;
   createdAt: Date;
   likeCount: number;
   hasLiked: boolean;
@@ -78,18 +85,25 @@ export function PostPageClient({
 }) {
   const [liked, setLiked] = useState(post.hasLiked);
   const [likeCount, setLikeCount] = useState(post.likeCount);
+  const [poll, setPoll] = useState(post.poll);
   const [commentsList, setCommentsList] = useState(initialComments);
   const [newRepliesMap, setNewRepliesMap] = useState<Record<string, Comment[]>>({});
   const [commentText, setCommentText] = useState("");
   const [replyingTo, setReplyingTo] = useState<{ id: string; userName: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Live count for this one post; `liked` stays local because it is personal.
+  // Live totals for this one post. What is personal — whether *you* liked it,
+  // which choice *you* picked — stays local and is never overwritten here.
   useRealtimeEvents(
     useCallback(
       (event) => {
-        if (event.kind !== "post-like" || event.postId !== post.id) return;
-        setLikeCount(event.likeCount);
+        if (event.kind === "post-like" && event.postId === post.id) {
+          setLikeCount(event.likeCount);
+          return;
+        }
+        if (event.kind === "poll-vote" && event.postId === post.id) {
+          setPoll((prev) => (prev ? applyPollCounts(prev, event.counts) : prev));
+        }
       },
       [post.id],
     ),
@@ -99,6 +113,20 @@ export function PostPageClient({
     setLiked((prev) => !prev);
     setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
     toggleLikePost(post.id);
+  };
+
+  const handleVote = (optionId: string) => {
+    if (!poll) return;
+    const previous = poll;
+    const optimistic = applyOptimisticVote(previous, optionId);
+    if (optimistic === previous) return;
+
+    setPoll(optimistic);
+    votePoll(post.id, optionId)
+      .then(({ counts, votedOptionId }) =>
+        setPoll(applyPollCounts(optimistic, counts, votedOptionId)),
+      )
+      .catch(() => setPoll(previous));
   };
 
   const handleSubmitComment = () => {
@@ -279,6 +307,10 @@ export function PostPageClient({
       )}
 
       <PostImages images={post.images} />
+
+      {poll && (
+        <PollBlock poll={poll} onVote={handleVote} className="px-4 pb-3 pt-1" />
+      )}
 
       {post.linkPreview && (
         <LinkPreviewCard preview={post.linkPreview} className="mt-3" />

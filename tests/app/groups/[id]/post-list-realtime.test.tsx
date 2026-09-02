@@ -6,11 +6,13 @@ import type { RealtimeEvent } from "@/lib/realtime";
 
 const mocks = vi.hoisted(() => ({
   toggleLikePost: vi.fn(),
+  votePoll: vi.fn(),
   handlers: [] as Array<(event: RealtimeEvent) => void>,
 }));
 
 vi.mock("@/app/actions/groups", () => ({
   toggleLikePost: mocks.toggleLikePost,
+  votePoll: mocks.votePoll,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -35,6 +37,7 @@ function post(overrides: Partial<Post> = {}): Post {
     content: "Shipping the new feed today",
     images: [],
     linkPreview: null,
+    poll: null,
     likeCount: 4,
     hasLiked: false,
     originalPostId: null,

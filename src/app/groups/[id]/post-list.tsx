@@ -14,11 +14,17 @@ import { timeAgo } from "@/lib/utils";
 import { PostImages } from "./post-images";
 import { EditPostDialog } from "./edit-post-dialog";
 import { ShareDialog } from "./share-dialog";
-import { toggleLikePost } from "@/app/actions/groups";
+import { toggleLikePost, votePoll } from "@/app/actions/groups";
 import { useRouter } from "next/navigation";
 import { MentionContent } from "@/components/mention-content";
 import { LinkPreviewCard } from "@/components/link-preview-card";
 import type { LinkPreview } from "@/lib/links";
+import { PollBlock } from "./poll-block";
+import {
+  applyOptimisticVote,
+  applyPollCounts,
+  type PollResults,
+} from "@/lib/poll";
 import { useRealtimeEvents } from "@/components/realtime-provider";
 
 const TRUNCATE_LENGTH = 300;
@@ -32,6 +38,7 @@ type Post = {
   content: string;
   images: string[];
   linkPreview: LinkPreview | null;
+  poll: PollResults | null;
   likeCount: number;
   hasLiked: boolean;
   originalPostId: string | null;
@@ -54,6 +61,7 @@ export function PostList({
   hasMore,
   loadingMore,
   onLoadMore,
+  canVote = true,
 }: {
   posts: Post[];
   currentUserId: string;
@@ -72,6 +80,8 @@ export function PostList({
   hasMore?: boolean;
   loadingMore?: boolean;
   onLoadMore?: () => void;
+  /** False for a visitor browsing a public group they have not joined. */
+  canVote?: boolean;
 }) {
   const router = useRouter();
   const listRef = useRef<HTMLDivElement>(null);
@@ -80,28 +90,54 @@ export function PostList({
   const [likeStates, setLikeStates] = useState<Map<string, { liked: boolean; count: number }>>(new Map());
   const likeStatesRef = useRef(likeStates);
   likeStatesRef.current = likeStates;
+  // Poll tallies live up here rather than inside each row, because the list is
+  // virtualized: a row that scrolls out and back would otherwise remount onto
+  // the props it started with and lose every vote since.
+  const [pollStates, setPollStates] = useState<Map<string, PollResults>>(
+    new Map(),
+  );
+  const pollStatesRef = useRef(pollStates);
+  pollStatesRef.current = pollStates;
   const postsRef = useRef(posts);
   postsRef.current = posts;
 
-  // Someone else liked a post that's on screen. The event carries the
-  // authoritative total rather than a delta, so writing it straight into the
-  // optimistic overlay also repairs any drift from a missed event.
+  const pollOf = (post: Post) => pollStatesRef.current.get(post.id) ?? post.poll;
+
+  const setPoll = (postId: string, results: PollResults) =>
+    setPollStates((prev) => new Map(prev).set(postId, results));
+
+  // Someone else liked a post, or answered a poll, that's on screen. Both
+  // events carry the authoritative totals rather than a delta, so writing them
+  // straight into the optimistic overlay also repairs drift from a missed one.
   useRealtimeEvents(
     useCallback((event) => {
-      if (event.kind !== "post-like") return;
-      const post = postsRef.current.find((p) => p.id === event.postId);
-      if (!post) return;
+      if (event.kind === "post-like") {
+        const post = postsRef.current.find((p) => p.id === event.postId);
+        if (!post) return;
 
-      setLikeStates((prev) => {
-        const next = new Map(prev);
-        const current = next.get(event.postId);
-        next.set(event.postId, {
-          // Only this user's own click can change whether *they* liked it.
-          liked: current?.liked ?? post.hasLiked,
-          count: event.likeCount,
+        setLikeStates((prev) => {
+          const next = new Map(prev);
+          const current = next.get(event.postId);
+          next.set(event.postId, {
+            // Only this user's own click can change whether *they* liked it.
+            liked: current?.liked ?? post.hasLiked,
+            count: event.likeCount,
+          });
+          return next;
         });
-        return next;
-      });
+        return;
+      }
+
+      if (event.kind === "poll-vote") {
+        const post = postsRef.current.find((p) => p.id === event.postId);
+        if (!post) return;
+        const current = pollStatesRef.current.get(event.postId) ?? post.poll;
+        if (!current) return;
+
+        // The broadcast has no idea who *this* viewer voted for, so their own
+        // choice is carried over untouched.
+        setPoll(event.postId, applyPollCounts(current, event.counts));
+      }
     }, []),
   );
 
@@ -138,6 +174,25 @@ export function PostList({
       return next;
     });
     toggleLikePost(post.id);
+  };
+
+  const handleVote = (post: Post, optionId: string) => {
+    const current = pollOf(post);
+    if (!current) return;
+
+    const optimistic = applyOptimisticVote(current, optionId);
+    // Re-picking the option you already hold changes nothing worth a round trip.
+    if (optimistic === current) return;
+
+    setPoll(post.id, optimistic);
+
+    votePoll(post.id, optionId)
+      .then(({ counts, votedOptionId }) =>
+        setPoll(post.id, applyPollCounts(optimistic, counts, votedOptionId)),
+      )
+      // A vote the server refused — not a member, poll pulled — must not leave
+      // a phantom bar behind.
+      .catch(() => setPoll(post.id, current));
   };
 
   if (posts.length === 0) {
@@ -303,6 +358,15 @@ export function PostList({
                     )}
 
                     <PostImages images={post.images} />
+
+                    {(pollStates.get(post.id) ?? post.poll) && (
+                      <PollBlock
+                        poll={pollStates.get(post.id) ?? post.poll!}
+                        onVote={(optionId) => handleVote(post, optionId)}
+                        canVote={canVote && !post.id.startsWith("optimistic-")}
+                        className="mx-4 mb-3"
+                      />
+                    )}
 
                     {post.linkPreview && (
                       <LinkPreviewCard

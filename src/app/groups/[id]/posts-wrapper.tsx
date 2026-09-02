@@ -6,6 +6,7 @@ import { PendingPostsSection } from "./pending-posts-section";
 import { PendingRequestsSection } from "./pending-requests-section";
 import { PostList } from "./post-list";
 import { PostImages } from "./post-images";
+import { PollBlock } from "./poll-block";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   createPost,
@@ -17,6 +18,7 @@ import {
   sharePost,
 } from "@/app/actions/groups";
 import { parseLinkPreview, type LinkPreview } from "@/lib/links";
+import { buildPollResults, type PollResults } from "@/lib/poll";
 
 type Post = {
   id: string;
@@ -27,6 +29,7 @@ type Post = {
   content: string;
   images: string[];
   linkPreview: LinkPreview | null;
+  poll: PollResults | null;
   likeCount: number;
   hasLiked: boolean;
   originalPostId: string | null;
@@ -42,6 +45,7 @@ type MyPendingPost = {
   id: string;
   content: string;
   images: string[];
+  poll: PollResults | null;
   createdAt: Date;
 };
 
@@ -111,6 +115,23 @@ export function PostsWrapper({
         "",
       )}`;
 
+    // Placeholder option ids, good only for drawing the empty poll. The real
+    // ones are minted server-side and swapped in below — voting on the
+    // optimistic copy would name choices no server has heard of.
+    const pollJson = formData.get("poll") as string | null;
+    const optimisticPoll = pollJson
+      ? buildPollResults(
+          {
+            options: (JSON.parse(pollJson) as string[]).map((text, i) => ({
+              id: `optimistic-${i}`,
+              text,
+            })),
+          },
+          {},
+          null,
+        )
+      : null;
+
     if (isAdmin) {
       setApprovedPosts((prev) => [
         {
@@ -122,6 +143,7 @@ export function PostsWrapper({
           content: (formData.get("content") as string)?.trim() || "",
           images: optimisticImageUrls,
           linkPreview: optimisticPreview,
+          poll: optimisticPoll,
           likeCount: 0,
           hasLiked: false,
           originalPostId: null,
@@ -140,18 +162,27 @@ export function PostsWrapper({
           id: optimisticId,
           content: (formData.get("content") as string)?.trim() || "",
           images: optimisticImageUrls,
+          poll: optimisticPoll,
           createdAt: new Date(),
         },
         ...prev,
       ]);
     }
 
-    createPost(formData).then((realId) => {
-      if (realId) {
-        setApprovedPosts((prev) =>
-          prev.map((p) => (p.id === optimisticId ? { ...p, id: realId } : p)),
+    createPost(formData).then((created) => {
+      if (!created) return;
+      // The poll arrives with the server's option ids, so the post the author
+      // is already looking at becomes answerable in place.
+      const adopt = <T extends { id: string; poll: PollResults | null }>(
+        list: T[],
+      ) =>
+        list.map((p) =>
+          p.id === optimisticId
+            ? { ...p, id: created.id, poll: created.poll ?? p.poll }
+            : p,
         );
-      }
+      setApprovedPosts(adopt);
+      setMyPendingPosts(adopt);
     });
   };
 
@@ -247,6 +278,9 @@ export function PostsWrapper({
           images: [],
           // A share's card slot is taken by the post it quotes.
           linkPreview: null,
+          // Sharing a poll quotes the question; the choices stay answerable on
+          // the original, so a share never carries a poll of its own.
+          poll: null,
           likeCount: 0,
           hasLiked: false,
           originalPostId,
@@ -273,6 +307,7 @@ export function PostsWrapper({
             )}`,
           content,
           images: [],
+          poll: null,
           createdAt: new Date(),
         },
         ...prev,
@@ -346,6 +381,7 @@ export function PostsWrapper({
               hasMore={cursor !== null}
               loadingMore={loadingMore}
               onLoadMore={handleLoadMore}
+              canVote={!viewOnly}
             />
           </TabsContent>
 
@@ -386,6 +422,7 @@ export function PostsWrapper({
               hasMore={cursor !== null}
               loadingMore={loadingMore}
               onLoadMore={handleLoadMore}
+              canVote={!viewOnly}
             />
           </TabsContent>
 
@@ -395,6 +432,11 @@ export function PostsWrapper({
                 <div key={post.id} className="rounded-lg bg-muted/50 p-4">
                   <p className="text-sm">{post.content}</p>
                   <PostImages images={post.images} />
+                  {/* Nobody can answer a poll that is still awaiting
+                      approval, so the author sees the choices, not a ballot. */}
+                  {post.poll && (
+                    <PollBlock poll={post.poll} canVote={false} className="mt-3" />
+                  )}
                 </div>
               ))}
             </div>
@@ -412,6 +454,7 @@ export function PostsWrapper({
           hasMore={cursor !== null}
           loadingMore={loadingMore}
           onLoadMore={handleLoadMore}
+              canVote={!viewOnly}
         />
       )}
     </>

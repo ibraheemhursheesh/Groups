@@ -5,6 +5,7 @@ import { db } from "@/index";
 import { comments, commentLikes, posts, user } from "@/db/schema";
 import { eq, and, desc, count, isNull, inArray } from "drizzle-orm";
 import { parseLinkPreview } from "@/lib/links";
+import { loadPollResults } from "@/app/lib/polls";
 import { headers } from "next/headers";
 
 export async function getPost(postId: string) {
@@ -22,6 +23,7 @@ export async function getPost(postId: string) {
       content: posts.content,
       images: posts.images,
       linkPreview: posts.linkPreview,
+      poll: posts.poll,
       createdAt: posts.createdAt,
       originalPostId: posts.originalPostId,
     })
@@ -41,10 +43,13 @@ export async function getPost(postId: string) {
     }
   };
 
+  const pollResults = await loadPollResults([post], session.user.id);
+
   return {
     ...post,
     images: parseImages(post.images),
     linkPreview: parseLinkPreview(post.linkPreview),
+    poll: pollResults.get(post.id) ?? null,
   };
 }
 

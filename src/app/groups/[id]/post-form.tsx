@@ -8,7 +8,7 @@ import {
   PopoverAnchor,
 } from "@/components/ui/popover";
 import { useRef, useState, useEffect, useCallback } from "react";
-import { ImageIcon, LoaderCircleIcon } from "lucide-react";
+import { BarChart2Icon, ImageIcon, LoaderCircleIcon } from "lucide-react";
 import { searchGroupMembers } from "@/app/actions/groups";
 import imageCompression from "browser-image-compression";
 import {
@@ -16,6 +16,8 @@ import {
   LinkPreviewSkeleton,
 } from "@/components/link-preview-card";
 import { useLinkPreview } from "@/components/use-link-preview";
+import { PollEditor } from "./poll-editor";
+import { MIN_POLL_OPTIONS } from "@/lib/poll";
 
 const COMPRESSION_OPTIONS = {
   maxSizeMB: 0.3,
@@ -120,6 +122,10 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
   const [previews, setPreviews] = useState<string[]>([]);
   const [compressing, setCompressing] = useState(false);
   const [content, setContent] = useState("");
+  // null means "not a poll". Poll mode starts with the two empty choices a
+  // poll needs at minimum.
+  const [pollOptions, setPollOptions] = useState<string[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const link = useLinkPreview(content);
   const [suggestions, setSuggestions] = useState<MentionSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -237,18 +243,41 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
   };
 
   const handleSubmit = () => {
-    if (!content.trim() && compressedFilesRef.current.length === 0) return;
+    // Blank rows are the composer's business, not the server's — a poll is
+    // submitted as the choices someone actually typed.
+    const choices = pollOptions?.map((o) => o.trim()).filter(Boolean) ?? null;
+
+    if (pollOptions) {
+      if (!content.trim()) {
+        setError("A poll needs a question");
+        return;
+      }
+      if ((choices?.length ?? 0) < MIN_POLL_OPTIONS) {
+        setError(`Fill in at least ${MIN_POLL_OPTIONS} choices`);
+        return;
+      }
+      if (new Set(choices!.map((c) => c.toLowerCase())).size !== choices!.length) {
+        setError("Choices must be different");
+        return;
+      }
+    } else if (!content.trim() && compressedFilesRef.current.length === 0) {
+      return;
+    }
+
+    setError(null);
     const formData = new FormData();
     formData.set("groupId", groupId);
     formData.set("content", content);
     for (const file of compressedFilesRef.current) {
       formData.append("images", file);
     }
+    if (choices) formData.set("poll", JSON.stringify(choices));
     link.appendTo(formData);
 
     onOptimisticSubmit(formData);
     formRef.current?.reset();
     setContent("");
+    setPollOptions(null);
     clearPreviews();
     link.reset();
   };
@@ -262,7 +291,11 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
           <Textarea
             ref={textareaRef}
             name="content"
-            placeholder="Write a post... Use @ to mention someone"
+            placeholder={
+              pollOptions
+                ? "Ask a question..."
+                : "Write a post... Use @ to mention someone"
+            }
             rows={3}
             value={content}
             onChange={handleTextChange}
@@ -323,6 +356,17 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
         </PopoverContent>
       </Popover>
 
+      {pollOptions && (
+        <PollEditor
+          options={pollOptions}
+          onChange={setPollOptions}
+          onRemove={() => {
+            setPollOptions(null);
+            setError(null);
+          }}
+        />
+      )}
+
       {link.preview ? (
         <LinkPreviewCard
           preview={link.preview}
@@ -353,8 +397,10 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
           ))}
         </div>
       )}
+      {error && <p className="mb-2 text-xs text-destructive">{error}</p>}
+
       <div className="flex items-center gap-2">
-        {previews.length < MAX_IMAGES && (
+        {previews.length < MAX_IMAGES && !pollOptions && (
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
@@ -362,6 +408,21 @@ export function PostForm({ groupId, isAdmin, onOptimisticSubmit }: PostFormProps
           >
             <ImageIcon className="size-3.5" />
             Add images ({previews.length}/{MAX_IMAGES})
+          </button>
+        )}
+
+        {/* A post is either a poll or a gallery: the two compete for the same
+            space under the question, and mixing them muddies what is being
+            asked. Attaching images first hides the button rather than
+            discarding what was already picked. */}
+        {!pollOptions && previews.length === 0 && (
+          <button
+            type="button"
+            onClick={() => setPollOptions(["", ""])}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-dashed px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+          >
+            <BarChart2Icon className="size-3.5" />
+            Poll
           </button>
         )}
 

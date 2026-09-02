@@ -14,6 +14,10 @@ export const posts = pgTable("posts", {
   // The Open Graph card for the first link in the post, as JSON. Snapshotted
   // at write time so a feed never has to fetch anything to render.
   linkPreview: t.text("link_preview"),
+  // The poll's choices as JSON, or null on an ordinary post. The question is
+  // the post's own `content`, so a poll reads, truncates and links like any
+  // other post. Votes live in `pollVotes` — no running tally is kept here.
+  poll: t.text("poll"),
   status: t.text("status").notNull(),
   createdAt: t
     .timestamp("created_at", { precision: 6, withTimezone: true })
@@ -42,6 +46,39 @@ export const likes = pgTable(
   // concurrent requests can no longer both insert and inflate the count.
   (table) => [
     t.uniqueIndex("likes_post_id_user_id_unique").on(table.postId, table.userId),
+  ],
+);
+
+export const pollVotes = pgTable(
+  "poll_votes",
+  {
+    id: t.text("id").primaryKey(),
+    postId: t
+      .text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    // The id of an option inside `posts.poll`. A plain string rather than a
+    // foreign key, because the options themselves live in json on the post.
+    optionId: t.text("option_id").notNull(),
+    userId: t
+      .text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: t
+      .timestamp("created_at", { precision: 6, withTimezone: true })
+      .notNull(),
+    updatedAt: t
+      .timestamp("updated_at", { precision: 6, withTimezone: true })
+      .notNull(),
+  },
+  // One vote per person per poll — changing your mind updates this row rather
+  // than adding another. That is what makes a tally a plain count, with no way
+  // for concurrent clicks to count one voter twice.
+  (table) => [
+    t
+      .uniqueIndex("poll_votes_post_id_user_id_unique")
+      .on(table.postId, table.userId),
+    t.index("poll_votes_post_id_option_id_idx").on(table.postId, table.optionId),
   ],
 );
 

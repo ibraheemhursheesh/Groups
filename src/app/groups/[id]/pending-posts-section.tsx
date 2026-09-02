@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { PostImages } from "./post-images";
 import { LinkPreviewCard } from "@/components/link-preview-card";
 import type { LinkPreview } from "@/lib/links";
+import { PollBlock } from "./poll-block";
+import type { PollResults } from "@/lib/poll";
 
 type PendingPost = {
   id: string;
@@ -14,6 +16,7 @@ type PendingPost = {
   content: string;
   images: string[];
   linkPreview: LinkPreview | null;
+  poll: PollResults | null;
   createdAt: Date;
 };
 
@@ -70,6 +73,10 @@ export function PendingPostsSection({
               {post.content}
             </p>
             <PostImages images={post.images} />
+            {/* Read-only: an admin is judging the question, not answering it. */}
+            {post.poll && (
+              <PollBlock poll={post.poll} canVote={false} className="mx-4 mb-3" />
+            )}
             {post.linkPreview && (
               <LinkPreviewCard preview={post.linkPreview} className="mx-4 mb-3" />
             )}
