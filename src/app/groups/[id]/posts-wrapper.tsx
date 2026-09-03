@@ -7,7 +7,13 @@ import { PendingRequestsSection } from "./pending-requests-section";
 import { PostList } from "./post-list";
 import { PostImages } from "./post-images";
 import { PollBlock } from "./poll-block";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsPanels,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import {
   createPost,
   handlePostApproval,
@@ -364,42 +370,50 @@ export function PostsWrapper({
             )}
           </TabsList>
 
-          <TabsContent value="posts">
-            <PostComposer
-              groupId={groupId}
-              isAdmin={isAdmin}
-              onOptimisticSubmit={handlePostSubmit}
-            />
-            <PostList
-              posts={approvedPosts}
-              currentUserId={currentUserId}
-              isAdmin={isAdmin}
-              groupId={groupId}
-              onDelete={handleDelete}
-              onEdit={handleEdit}
-              onShare={handleShare}
-              hasMore={cursor !== null}
-              loadingMore={loadingMore}
-              onLoadMore={handleLoadMore}
-              canVote={!viewOnly}
-            />
-          </TabsContent>
+          <TabsPanels>
+            <TabsContent value="posts">
+              <PostComposer
+                groupId={groupId}
+                isAdmin={isAdmin}
+                onOptimisticSubmit={handlePostSubmit}
+              />
+              <PostList
+                posts={approvedPosts}
+                currentUserId={currentUserId}
+                isAdmin={isAdmin}
+                groupId={groupId}
+                onDelete={handleDelete}
+                onEdit={handleEdit}
+                onShare={handleShare}
+                hasMore={cursor !== null}
+                loadingMore={loadingMore}
+                onLoadMore={handleLoadMore}
+                canVote={!viewOnly}
+              />
+            </TabsContent>
 
-          <TabsContent value="pending-posts">
-            <PendingPostsSection
-              posts={pendingPosts}
-              onApprove={handleApprove}
-              onReject={handleReject}
-            />
-          </TabsContent>
+            {/* A slide with no tab above it is unreachable by press but still
+                swipeable into, so the panels come and go with the triggers. */}
+            {pendingPosts.length > 0 && (
+              <TabsContent value="pending-posts">
+                <PendingPostsSection
+                  posts={pendingPosts}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                />
+              </TabsContent>
+            )}
 
-          <TabsContent value="requests">
-            <PendingRequestsSection
-              requests={pendingRequests}
-              onApprove={handleApproveRequest}
-              onReject={handleRejectRequest}
-            />
-          </TabsContent>
+            {pendingRequests.length > 0 && (
+              <TabsContent value="requests">
+                <PendingRequestsSection
+                  requests={pendingRequests}
+                  onApprove={handleApproveRequest}
+                  onReject={handleRejectRequest}
+                />
+              </TabsContent>
+            )}
+          </TabsPanels>
         </Tabs>
       ) : myPendingPosts.length > 0 ? (
         <Tabs defaultValue="posts">
@@ -410,37 +424,39 @@ export function PostsWrapper({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="posts">
-            <PostList
-              posts={approvedPosts}
-              currentUserId={currentUserId}
-              isAdmin={isAdmin}
-              groupId={groupId}
-              onDelete={handleDelete}
-              onEdit={handleEdit}
-              onShare={handleShare}
-              hasMore={cursor !== null}
-              loadingMore={loadingMore}
-              onLoadMore={handleLoadMore}
-              canVote={!viewOnly}
-            />
-          </TabsContent>
+          <TabsPanels>
+            <TabsContent value="posts">
+              <PostList
+                posts={approvedPosts}
+                currentUserId={currentUserId}
+                isAdmin={isAdmin}
+                groupId={groupId}
+                onDelete={handleDelete}
+                onEdit={handleEdit}
+                onShare={handleShare}
+                hasMore={cursor !== null}
+                loadingMore={loadingMore}
+                onLoadMore={handleLoadMore}
+                canVote={!viewOnly}
+              />
+            </TabsContent>
 
-          <TabsContent value="my-pending">
-            <div className="space-y-3">
-              {myPendingPosts.map((post) => (
-                <div key={post.id} className="rounded-lg bg-muted/50 p-4">
-                  <p className="text-sm">{post.content}</p>
-                  <PostImages images={post.images} />
-                  {/* Nobody can answer a poll that is still awaiting
-                      approval, so the author sees the choices, not a ballot. */}
-                  {post.poll && (
-                    <PollBlock poll={post.poll} canVote={false} className="mt-3" />
-                  )}
-                </div>
-              ))}
-            </div>
-          </TabsContent>
+            <TabsContent value="my-pending">
+              <div className="space-y-3">
+                {myPendingPosts.map((post) => (
+                  <div key={post.id} className="rounded-lg bg-muted/50 p-4">
+                    <p className="text-sm">{post.content}</p>
+                    <PostImages images={post.images} />
+                    {/* Nobody can answer a poll that is still awaiting
+                        approval, so the author sees the choices, not a ballot. */}
+                    {post.poll && (
+                      <PollBlock poll={post.poll} canVote={false} className="mt-3" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+          </TabsPanels>
         </Tabs>
       ) : (
         <PostList
