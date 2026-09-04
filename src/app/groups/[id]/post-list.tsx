@@ -2,16 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Heart, MessageCircle } from "lucide-react";
+import { Heart, MessageCircle } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
 import { PostImages } from "./post-images";
+import { PostActionMenu } from "./post-action-menu";
 import { EditPostDialog } from "./edit-post-dialog";
 import { ShareDialog } from "./share-dialog";
 import { toggleLikePost, votePoll } from "@/app/actions/groups";
@@ -247,7 +241,13 @@ export function PostList({
                     className="overflow-hidden rounded-xl border cursor-pointer transition hover:border-primary/30"
                     onClick={(e) => {
                       const target = e.target as HTMLElement;
-                      if (target.closest("button, a, [role='menu'], [role='dialog']")) return;
+                      // Drawers, dialogs and dropdowns portal to <body>, so their
+                      // DOM node sits outside this card even though React still
+                      // bubbles their click up to here. Anything whose target
+                      // isn't physically inside the card is one of those — bail so
+                      // dismissing a post's action/share drawer never navigates.
+                      if (!e.currentTarget.contains(target)) return;
+                      if (target.closest("button, a")) return;
                       router.push(`/groups/${groupId}/post/${post.id}`);
                     }}
                   >
@@ -283,23 +283,11 @@ export function PostList({
                       </div>
 
                       {(isAdmin || isOwner) && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="xs">
-                              <MoreHorizontal className="size-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {isOwner && (
-                              <DropdownMenuItem onClick={() => setEditingPost(post)}>
-                                Edit
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem onClick={() => onDelete(post.id)}>
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <PostActionMenu
+                          canEdit={isOwner}
+                          onEdit={() => setEditingPost(post)}
+                          onDelete={() => onDelete(post.id)}
+                        />
                       )}
                     </div>
 
