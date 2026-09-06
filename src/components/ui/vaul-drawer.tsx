@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Drawer } from "vaul";
 
 const BREAKPOINT = 768;
@@ -18,6 +18,40 @@ export function useIsMobile() {
   return isMobile;
 }
 
+/**
+ * Makes the Android/browser Back button (and back-swipe gesture) close an open
+ * drawer instead of navigating the page. While `open`, a throwaway history entry
+ * is pushed; pressing Back pops it and we fire `onClose` rather than leaving the
+ * page. Closing the drawer any other way (tap-outside, swipe, selecting an item)
+ * pops that entry back off so history stays balanced.
+ */
+export function useBackButtonClose(open: boolean, onClose: () => void) {
+  // Kept in a ref so the effect depends only on `open`; an inline onClose that
+  // changes identity every render must not tear the history entry down and
+  // rebuild it while the drawer is still open.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!open) return;
+
+    // Spread the existing state so Next's router internals survive the push.
+    window.history.pushState({ ...window.history.state, __drawerOpen: true }, "");
+
+    const onPopState = () => onCloseRef.current();
+    window.addEventListener("popstate", onPopState);
+
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      // Back already popped our entry (state no longer carries the flag), so only
+      // pop it ourselves when the drawer was closed by some other means.
+      if (window.history.state?.__drawerOpen) {
+        window.history.back();
+      }
+    };
+  }, [open]);
+}
+
 type VaulDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -26,6 +60,8 @@ type VaulDrawerProps = {
 };
 
 export function VaulDrawer({ open, onOpenChange, trigger, children }: VaulDrawerProps) {
+  useBackButtonClose(open, () => onOpenChange(false));
+
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
       {trigger && <Drawer.Trigger asChild>{trigger}</Drawer.Trigger>}

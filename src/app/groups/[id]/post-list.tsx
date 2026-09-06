@@ -282,13 +282,13 @@ export function PostList({
                         </div>
                       </div>
 
-                      {(isAdmin || isOwner) && (
-                        <PostActionMenu
-                          canEdit={isOwner}
-                          onEdit={() => setEditingPost(post)}
-                          onDelete={() => onDelete(post.id)}
-                        />
-                      )}
+                      <PostActionMenu
+                        postUrl={`/groups/${groupId}/post/${post.id}`}
+                        canEdit={isOwner}
+                        canDelete={isAdmin || isOwner}
+                        onEdit={() => setEditingPost(post)}
+                        onDelete={() => onDelete(post.id)}
+                      />
                     </div>
 
                     {post.originalPostId ? (
