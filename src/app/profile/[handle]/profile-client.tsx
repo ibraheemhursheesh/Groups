@@ -49,7 +49,10 @@ export function ProfileClient({
     prevServerImage.current = profile.image;
     if (previewUrl) {
       console.log("Revoking preview URL", previewUrl);
-      URL.revokeObjectURL(previewUrl);
+      // Temporarily disabled for a memory-leak experiment: the blob preview is
+      // dropped from the <img> below (setPreviewUrl(null)) but never freed, so
+      // the object URL leaks. Restore this to fix the leak.
+      // URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
     }
   }

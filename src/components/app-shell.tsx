@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSession } from "@/app/lib/auth-client";
 import { BottomNav } from "@/components/bottom-nav";
 
@@ -24,7 +25,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         {children}
       </div>
-      <BottomNav />
+      {/* BottomNav reads usePathname(), which is request-time data. With Cache
+          Components enabled that blocks prerendering unless it sits under a
+          Suspense boundary; null fallback matches its existing behavior (the
+          nav is session-driven and only appears after hydration anyway). */}
+      <Suspense fallback={null}>
+        <BottomNav />
+      </Suspense>
     </>
   );
 }
