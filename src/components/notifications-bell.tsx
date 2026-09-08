@@ -20,7 +20,24 @@ import { useRealtimeEvents } from "@/components/realtime-provider";
 import { timeAgo } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
-export function NotificationsBell() {
+type NotificationsBellProps = {
+  /**
+   * Custom trigger, given the current unread count so it can show its own
+   * badge. Defaults to the standalone outline bell button used in the header.
+   */
+  renderTrigger?: (unreadCount: number) => React.ReactNode;
+  /** Which side the panel opens toward — "top" for the bottom nav. */
+  side?: "top" | "bottom" | "left" | "right";
+  align?: "start" | "center" | "end";
+  contentClassName?: string;
+};
+
+export function NotificationsBell({
+  renderTrigger,
+  side,
+  align = "end",
+  contentClassName = "w-80",
+}: NotificationsBellProps = {}) {
   const { data: session } = useSession();
   const userId = session?.user?.id ?? null;
 
@@ -73,17 +90,21 @@ export function NotificationsBell() {
   return (
     <DropdownMenu onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="relative gap-1.5">
-          <Bell className="size-4" />
-          {unreadCount > 0 && (
-            <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-white">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
-          )}
-        </Button>
+        {renderTrigger ? (
+          renderTrigger(unreadCount)
+        ) : (
+          <Button variant="outline" size="sm" className="relative gap-1.5">
+            <Bell className="size-4" />
+            {unreadCount > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-white">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </Button>
+        )}
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-80">
+      <DropdownMenuContent side={side} align={align} className={contentClassName}>
         <p className="px-2 py-1.5 text-xs text-muted-foreground">
           Notifications
         </p>

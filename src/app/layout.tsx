@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AccountSwitcher } from "@/components/account-switcher";
 import { RealtimeProvider } from "@/components/realtime-provider";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { AppShell } from "@/components/app-shell";
 import Link from "next/link";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
@@ -46,9 +47,14 @@ export default function RootLayout({
             every client-side navigation, rather than reconnecting per route. */}
         <RealtimeProvider>
           <Link href="/">Home</Link>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <AppShell>{children}</AppShell>
+          </ThemeProvider>
           <div className="fixed right-4 top-4 z-50 flex items-center gap-2">
-            <NotificationsBell />
+            {/* On mobile the bell lives in the bottom nav instead. */}
+            <span className="hidden md:block">
+              <NotificationsBell />
+            </span>
             <AccountSwitcher />
           </div>
         </RealtimeProvider>

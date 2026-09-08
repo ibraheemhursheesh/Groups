@@ -119,7 +119,7 @@ async function Dashboard({ session }: { session: any }) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex items-center justify-between flex-wrap">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             Welcome, {session.user.name}
@@ -156,7 +156,7 @@ async function Dashboard({ session }: { session: any }) {
             const meta =
               typeof org.metadata === "string"
                 ? JSON.parse(org.metadata || "{}")
-                : (org.metadata || {});
+                : org.metadata || {};
             return (
               <li key={org.id}>
                 <Link

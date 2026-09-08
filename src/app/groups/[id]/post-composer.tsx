@@ -37,7 +37,8 @@ export function PostComposer({ groupId, isAdmin, onOptimisticSubmit }: PostCompo
 
   if (isMobile) {
     return (
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-2">
+      // Sits above the mobile bottom nav (~4rem tall + safe area at bottom-0).
+      <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-6 z-40 flex flex-col gap-2">
         <VaulDrawer open={open} onOpenChange={setOpen} trigger={trigger}>
           <h2 className="mb-3 text-lg font-semibold">New post</h2>
           <PostForm groupId={groupId} isAdmin={isAdmin} onOptimisticSubmit={handleSubmit} />
